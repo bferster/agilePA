@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html>
+	<meta charset="UTF-8" />
+	<link REL="SHORTCUT ICON" HREF="img/favicon.ico">
+	<title>PrimaryAccess Prep</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+	<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+	<script src="lib/jquery.ui.touch-punch.min.js"></script>
+	<script src="helpers.js"></script>
+	<script src="images.js"></script>
+	<script src="qfile.js"></script>
+	<style type="text/css">
+		 body { 			font-family: Verdana,Geneva,sans-serif; font-size: 13px;  
+							padding: 0; margin: 0px;
+							}
+		.pa-main {		 	height: 100vh; width: 1000px; min-height: 500px; overflow: auto;  
+							background-color:#fff; margin-left: auto; margin-right: auto;
+							}
+		.pa-tabs { 			background-color:#fff;  font-size: 14px; margin: 16px 0 -1px 16px; cursor: pointer;
+							}
+		.pa-tab { 			display: inline-block; width: auto; border-top-left-radius: 8px;  border-top-right-radius: 8px;
+							padding: 4px 12px 2px 12px; background-color:#f8f8f8; border: 1px solid #999;
+							}
+		.pa-body { 			width: calc(100% - 98px); height: calc(100vh - 98px); padding: 9px 32px 32px 32px;  margin-left: 16px; margin-top:-1px;
+							border-bottom-left-radius: 8px;  border-bottom-right-radius: 8px;  border-top-right-radius: 8px;
+							background-color:#f8f8f8;  border: 1px solid #999;
+							}
+		.pa-bodyTitle { 	color:#27ae60; font-weight: bold; font-size: 16px;
+							}
+		.pa-proTitle { 		color:#999; font-size: 13px;
+							}
+		.pa-greenbs {		border-radius: 16px; padding-left: 8px; padding-right: 8px; display: inline-block; height: 17px; padding-top: 1px;
+							font-size: 12px; background-color: #27ae5fb2; cursor: pointer; text-align: center; color:#fff; 
+							}
+		.pa-dialog {	 	position: absolute; left: 28px; top: 60px;
+							user-select: none; width: 900px; border-radius:14px; background-color:#eee; box-shadow:4px 4px 8px #ccc;
+							margin-top: 0%; padding: 12px; font-size: 12px; 
+							}
+		.pa-dialogLabel {	font-size: 18px; text-shadow: 1px 1px #ccc; color:#27ae60; font-weight: bold;
+							}
+		.pa-dialogTitle {	font-weight: bold; color: #000; padding-left: 8px; padding-right: 8px;
+							}
+		.pa-dialogDoneBut {	cursor: pointer; float: right;
+							} 
+		.pa-dialogResults { width: 100%px; height: 354px; overflow-y: auto; border-radius: 6px;
+							background-color :#fff; padding: 8px; border: 1px solid #999;
+							}
+		.pa-gridItem {		color: #666; padding: 8px;  border: 1px solid #47ae80; margin-right: 8px; margin-bottom: 8px; display: inline-block;
+							width: 190px; height: 154px; cursor: pointer; border-radius: 4px; overflow: hidden; background-color:#f8f8f8;
+							}
+		.pa-gridItem:hover{ background-color: #dee7f1;
+							}
+		.pa-gridPic {		width: 100%; height: 100px; overflow: hidden; margin-bottom: 6px;
+							}
+		.pa-listItem {		height: 22px; cursor: pointer; background-color: #fff;
+							}
+		.pa-listItem:hover{ background-color: #dee7f1;
+							}
+		.pa-binItem {		color: #666; padding: 4px; border: 1px solid #47ae80; margin-right: 4px; margin-bottom: 4px; display: inline-block;
+							width: 112px; height: 75px; cursor: pointer; border-radius: 4px; overflow: hidden;
+							}
+		.pa-binPic {		width: 100%; height: 75px; overflow: hidden;
+							}
+
+		.pa-meta {			position: absolute;  width: 320px; padding: 16px; border-radius: 8px; font-size: 14px;
+							background-color: #e8e8e8; border: 1px solid #999; box-shadow: -4px -4px 12px 2px #aaa;
+							}
+
+		/* MISC --------------------------------------------------------------------------------------------------*/
+	
+		.pa-splash			{ position:absolute; left: calc(50% - 182px); top:  calc(40% - 51px); 
+							color: #999; font-size: 36px; text-align:center; font-weight: bold;
+							}
+		.pa-webpage	{ 		position: absolute; padding: 12px; border-radius: 6px; display: none; padding: 12px; height:auto; font-size: 14px; 
+							border: 1px solid #999; background-color:#eee; font-size: 11px; box-shadow: 4px 4px 12px 2px #aaa; 
+							}
+		.pa-is {			border-radius:16px; padding-left: 8px; padding-right: 8px; padding-top: 1px;
+							border: 1px solid #999; font-size: 12px; height: 18px; width: 270px;
+							}
+		.pa-bs {			display: inline-block; border-radius: 10px; padding-left: 8px; padding-right: 8px; background-color:#ccc; color: #333;
+							border: 1px solid #999; font-size: 12px; height: 16px; cursor: pointer; width: 50px; text-align:center;
+							}
+		.pa-ok {			display:inline-block; border-radius: 20px; height: 18px; width: 22px; cursor: pointer;
+							border: 1px solid #666; color: #666; font-size: 10px; padding-top: 4px;
+							}
+		.pa-popup {			position: absolute;  width: auto; padding: 8px; left: calc(50% - 100px); top: calc(50% - 50px);
+							border-radius: 8px; background-color: #eee; border: 1px solid #999; box-shadow: 4px 2px 12px 2px #aaa; 
+							font-size: 14px; text-align:center; display: none;
+							}
+		.pa-arrow-down {  	position: absolute; left: calc(50% - 14px); top: 100%; width: 0; height: 0; 
+							border-left: 10px solid transparent; border-right: 10px solid transparent;  border-top: 10px solid #bbb;
+							}
+	
+		/* GLOBAL --------------------------------------------------------------------------------------------------*/
+					
+		.unselectable { 	-moz-user-select: none; -khtml-user-select: none; -ms-user-select: none;  user-select: none; -webkit-user-select: none;
+							}
+		.selectable { 		-moz-user-select: text; -khtml-user-select: text; -ms-user-select: text;  user-select: text; -webkit-user-select: text;
+									}
+		 table {			border-spacing: 0px;  }
+		 input {		    vertical-align: -2px; }
+		 select:focus {  	outline: none; }
+
+			
+	</style>
+</head>
+<body>
+	<div id="mainDiv" class="pa-main unselectable">
+		<div id="tabsDiv" class="pa-tabs">
+			<div id="rosTabDiv" class="pa-tab unselectable">Classes</div>
+			<div id="proTabDiv" class="pa-tab unselectable">Assignments</div>
+		</div>
+	<div id="bodyDiv" class="pa-body"></div>
+	</div>
+
+<script>
+
+	var isMobile=false;														// Is a mobile platform
+	var noSplash=(window.location.host == "localhost") ? true : false;		// Splash screen inhibitor
+	var curTab="ros";														// Start tab
+	var roster=null;														// Holds roster module
+	var projects=null;														// Holds projects module
+	var pictures=null;														// Holds pictures module
+	var picFind=null;														// Hold pic search module
+	var qmf=null;															// QFile assignment system
+	var qmf2=null;															// QFile class system
+	var curJson={};															// To save show
+	var getPicsFromShow=false;												// KLUGE!!!
+
+	$(document).ready(function() {								        // ON PAGE LOADED
+		isMobile=navigator.platform.match(/(ipad|iphone|ipod|android)/i) ? true : false; // Set mobile flag id ios
+		if (!isMobile)														// Check for Android
+			isMobile=navigator.userAgent.match(/android/i) ? true : false; 	// Set mobile flag
+		var url=window.location.search.substring(1);					 	// Get query string
+		qmf=new QmediaFile("//viseyes.org/pa/",1);							// Alloc assignment file system
+		qmf2=new QmediaFile("//viseyes.org/pa/",2);							// Alloc class file system
+		roster=new CRoster();												// Alloc CRoster module
+		projects=new CProject();											// Alloc CProject module
+		picFind=new CImageFind("bodyDiv");									// Alloc CImageFind module
+		
+		qmf.LogIn(function(ok) { 											// Login
+			if (ok)			roster.email=qmf.email;							// Set mail
+			if (!roster.email) {											// No email
+				qmf.LoadFile("xxx49");										// Load demo assignemnt
+				qmf2.LoadFile("xxx74");										// Load demo class
+				}
+			else{
+				if (GetCookie("lastAssign"))  								// If a last show loaded
+					qmf.LoadFile("xxx"+GetCookie("lastAssign"));			// Load it
+				if (GetCookie("lastClass"))  								// If a last class loaded
+					qmf2.LoadFile("xxx"+GetCookie("lastClass"));			// Load it
+				}
+			Draw();															// Draw body
+			});					
+		
+		$(window).on("keydown",function(e) {								// HANDLE KEYPRESS
+			if ((e.which == 84) && e.altKey && e.ctrlKey)					// TEST KEY
+				gTest();
+			});
+
+		$("#rosTabDiv").on("click", function() {							// Roster tab click
+			Sound("click");													// Click
+			curTab="ros";													// Set current tab to roster
+			Draw();															// Draw
+			});
+		$("#proTabDiv").on("click", function() {							// Project tab click
+			Sound("click");													// Click
+			curTab="pro";													// Set current tab to project
+			Draw();															// Draw
+			});
+	});
+	
+	function Draw()
+	{
+		$("[id$=TabDiv]").css({ "border-bottom":"1px solid #999","background-color":"#fff","color":"#666" });
+		$("#"+curTab+"TabDiv").css({ "border-bottom":"1px solid #f8f8f8","background-color":"#f8f8f8","color":"#339933" });
+		$("#pa-webpage").remove();											// Kill image
+		$("#metaDiv").remove();												// Kill metadata
+		if (curTab == "ros")		roster.Draw();							// Draw roster
+		else if (curTab == "pro")	projects.Draw();						// Draw projects
+		}
+
+	function gTest()
+	{
+		trace(123)
+	}
+
+	function ShowHelp(page)												//  SHOW HELP
+	{
+		window.open("https://docs.google.com/document/d/1ANNWAcTvQ6e9ZlyQUBrd_WvYSEOZCVeCDLCogQiul_E/edit?usp=sharing"+page,"_blank");
+	}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ROSTER
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	function CRoster()														// PLAYER CONSTRUCTOR
+	{
+		this.email="";															// Teacher's email
+		this.title="";															// Class title
+		this.assigns=[];														// List of assignments
+		this.roster=[];															// Roster
+	}
+
+	CRoster.prototype.Draw=function() 										// UPDATE 
+	{
+		var i,o;
+		var _this=this;														// Context
+		var title=qmf2.curFile ? " - "+qmf2.curFile : " - New";				// Show number
+		var x=$("#bodyDiv").offset().left+560;								// Left
+		var str="<p class='pa-bodyTitle'>Edit class";						// Title
+		str+="<span class='pa-proTitle' id='classTitleTitle'>"+title+"</span>"; // Add show name
+		str+="<span style='float:right'>";
+		str+=MakeSelect("classOptions",false,["Class options","New","Load","Save"]);
+		str+="&nbsp;&nbsp;<img src='img/helpicon.gif' style='cursor:pointer;vertical-align:-5px' onclick='ShowHelp(\"assign\")'></span></p>"; 
+		str+="<table style='display:inline-block;padding-bottom:8px'>";	
+		str+="<tr><td>Class name&nbsp;&nbsp;</td><td><input id='classTitle' class='pa-is' value='"+this.title+"'></input></td></tr>";
+		str+="<tr><td>Assign to all&nbsp;&nbsp;</td><td>"+MakeSelect("classAssigns",false,["Choose assignment"],"")+"</td></tr>";
+		str+="</table><br><br><hr style='margin-top:-8px'><p><span class='pa-bodyTitle'>Students</span><br>";	// Title
+		str+="</span></p><div id='classAssets' style='height:400px' class='pa-dialogResults'></div>";	// Scrollable container
+		str+="<span id='classAdd' style='margin-top:8px' class='pa-greenbs'>Add student(s) to class</span>";		// Find
+		$("#bodyDiv").html(str);
+		this.DrawClass();													// Fill in class
+
+		if (this.email) {													// If an email set
+
+			$.ajax({ url: "//viseyes.org/pa/findshows.php",					// GET ASSIGNMENTS FROM DB
+					data: { email: this.email, ver:1 },						// Query
+					success: function(res) {								// When loaded
+					_this.assigns=[];										// Start fresh
+					$("#classAssigns").empty();								// Clear select
+					$("#classAssigns").append("<option>Choose assignment</option>");	// Add title
+					res=$.parseJSON(res);									// Objectify
+					for (var i=0;i<res.length;++i) {						// For each assignment
+						var opt=ShortenString(res[i].id+" - "+res[i].title,48);	// Make options
+						_this.assigns.push(opt);							// Add assignment id
+						$("#classAssigns").append("<option>"+opt+"</option>");	// Add to pulldown
+						}
+					_this.DrawClass();										// Fill in class
+					}
+				});
+			}
+		else $("#classAssigns").append("<option>49 - Demo Civil Rights</option>");	// Add demo
+
+		$("#classAdd").on("click", function() {								// ON ADD STUDENT
+			_this.EditStudent(-1);											// Add dialog 
+			});
+
+		$("#classTitle").on("change", function() {							// ON TITLE CHANGE
+			_this.title=$(this).val();										// Set 
+			});
+			
+		$("#classAssigns").on("change", function() {						// ON ASSIGNMENT CHANGE
+			var i;
+			var a=$(this).val();											// Get assignment 
+			if (a == "Choose assignment")									// No pick
+				return;														// Quit
+			_this.assign=a.match(/\d+/);									// Extract id
+			for (i=0;i<_this.roster.length;++i) 							// For each show
+			_this.roster[i].assign=_this.assign;							// Set assignment
+			$(this).val("Choose assignment");								// Restore menu
+			_this.DrawClass();												// Draw roster
+			});
+
+		$("#classOptions").on("change", function() {						// ON OPTIONS CHANGE
+			var opt=$(this).val();											// Current option
+			if (opt == "New") 												// New show
+				ConfirmBox(function() {										// Confirm 
+					_this.title="";	 _this.roster=[]; qmf2.curFile=0;		// Defaults
+					_this.Draw();											// Redraw
+					});
+			else if (opt == "Load")											// Load show
+				ConfirmBox(function() {										// Confirm 
+					qmf2.Load();											// Load
+					});
+			else if (opt == "Save")	{										// Save show
+				curJson={};													// Clear
+				curJson.title=_this.title;									// Get title 
+				curJson.roster=$.parseJSON(JSON.stringify(_this.roster)); 	// Clone roster
+				qmf2.Save();												// Save
+				}
+			$(this).val("Class options");									// Restore  pulldown
+			});
+	}
+
+	CRoster.prototype.DrawClass=function() 								// UPDATE CLASS
+	{
+		var i,o;
+		var _this=this;														// Context
+		var str="<table style='width:100%'><tr style='font-weight:bold'><td>Name</td><td>Assignment</td><td>Link</td><td></td><td></td></tr>";
+		str+="<tr><td colspan='5'><hr></td</tr>";
+		for (i=0;i<this.roster.length;++i) {								// For each show
+			o=this.roster[i];												// Point at it
+			if (!o.name)	continue;										// Skip over no-names
+			str+="<tr id='classRow-"+o.id+"' class='pa-listItem selectable'><td><b>"+ShortenString(o.name,30);	// Name
+			str+="</b></td><td>"+_this.GetAssignmentName(o.assign);			// Assignment
+			key=this.EncodeKey(o.assign,o.id,0);							// Get key
+			str+="</td><td>viseyes.org/pa?"+key;							// Show link
+			str+="</td><td><div class='pa-greenbs' id='viewPro-";			// View
+			str+=this.EncodeKey(o.assign,o.id,1)+"'>View</div>";			// View key
+			str+="</td><td><img id='editBut-"+i+"' src='img/editbut.gif' style='cursor:pointer'>";	// Edit
+			str+="</td></tr>";												// End row	
+			}
+		str+="</table>"
+		$("#classAssets").html(str);										// Fill it
+		
+		$("[id^=viewPro-]").click( function(e) {							// ON VIEW CLICK
+			var id=e.currentTarget.id.substr(8);							// Get key from id
+			projects.AssignmentPreview(id,true);							// Preview			
+			});	
+
+		$("[id^=editBut-]").click( function(e) {							// ON EDIT CLICK
+			var id=e.currentTarget.id.substr(8);							// Get key from id
+			_this.EditStudent(id);											// Preview			
+			});	
+	}
+
+	CRoster.prototype.GetAssignmentName=function(id) 					// GET ASSIGNMENT NAME
+	{
+		var i;	
+		var re=new RegExp(id+" - ");										// Search for id
+		for (i=0;i<this.assigns.length;++i)									// For each assignment
+			if (this.assigns[i].match(re))									// A match
+				return this.assigns[i];										// Return name
+		return id;
+	}
+
+	CRoster.prototype.EditStudent=function(num) 						// ADD/EDIT STUDENT
+	{
+		var o={ name:"", email:"", assign:""};
+		var _this=this;														// Save context
+		var title="Edit student"
+		var x=$(window).width()/2-266;										// Center in main screen
+		var y=$("#bodyDiv").height()/2-100;									// Center
+		if (num == -1) 	title="Add new student";							// Adding
+		else																// Editing
+			o=_this.roster[num];											// Point at current
+		var str="<div style='display:inline-block'><table>";				// Info div/table
+		str+="<tr><td>Name(s)</td><td><textarea id='addName' type='text' class='pa-is' style='width:200px;font-family:sans-serif;padding:3px 8px 0 8px'>"+o.name+"</textarea></td></tr>";
+		str+="<tr><td>Email(s)</td><td><input id='addEmail' type='text' class='pa-is' style='width:200px'value='"+o.email+"'></td></tr>";
+		str+="<tr><td>Assignment&nbsp;</td><td>"+MakeSelect("addAssigns",false,this.assigns,this.GetAssignmentName(o.assign))+"</td></tr>";
+		str+="</table></div>";												// End div
+			
+		DialogBox(title,str,x,y,500, function() {							// Run dialog			
+			o.name=$("#addName").val() ? $("#addName").val() : "";			// Add name
+			o.email=$("#addEmail").val() ? $("#addEmail").val() : "";		// Add name
+			if ($("#addAssigns").val())										// If assignments
+				o.assign=$("#addAssigns").val().match(/(\d+)/)[0]-0;		// Get id of assignment
+			o.name=o.name.replace(/\\r/,"");								// Remove CRs
+			if (num == -1) {												// Adding a new one
+				var v=o.name.split(",");									// Split name by ','
+				if (v.length < 2)	v=o.name.split("\t");					// If nothing, try tabs
+				if (v.length < 2)	v=o.name.split("\n");					// If nothing, try CRs
+				var vv=o.email.split(",");									// Split email by ','
+				if (vv.length < 2)	vv=o.email.split("\t");					// If nothing, try tabs
+				if (vv.length < 2)	vv=o.email.split("\n");					// If nothing, try CRs
+				for (var i=0;i<v.length;++i) {								// For each one
+					o.id=_this.roster.length;								// Set student id
+					o.name=v[i];											// Isolate name
+					if (vv[i]) o.email=vv[i];								// Set								
+					if (o.name)	{											// If a name
+						_this.roster.push($.parseJSON(JSON.stringify(o)));	// Add clone
+						_this.DrawClass();									// Redraw
+						Sound("ding");										// Ding
+						}
+					}
+				}
+			else{															// Edit it
+				if (!o.name) { 												// No name set
+					ConfirmBox(function() {									// Confirm if no name
+							_this.roster[num]=o; 							// Set it
+							_this.DrawClass();								// Redraw
+							Sound("delete");								// Delete
+							},								
+						"This will remove the student from the class"		// Sub-prompt		
+						);
+					}
+				else{
+					_this.roster[num]=o;									// Replace it
+					_this.DrawClass();										// Redraw
+					Sound("ding");											// Ding
+					}
+				}
+			});
+	}
+
+	CRoster.prototype.EncodeKey=function(id, student, teacher) 			// ENCODE ID INTO KEY
+	{	
+		var nn;
+		var key=""+id;														// Copy id as string
+		while ((""+key).length < 6) 	   	key="0"+key;					// At least 6 digits
+		while ((""+student).length < 2) 	student="0"+student;			// At least 2 digits
+		var ord=nn=(student%5)+1;											// Get order strategy 1-5
+		if (teacher)														// If teacher
+			ord+=8;															// Turn on 4th bit
+		ord=(ord&0xf).toString(16);											// Keep only 4 bits and make hex
+		while (nn-- > 0) 													// For each shift
+			key=key.charAt(5)+key.substr(0,5);								// Shift-right
+		key=""+ord+student+key;												// Make into key
+		return key;															// Return key
+		}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// PROJECT
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	function CProject()													// PROJECT CONSTRUCTOR
+	{
+		this.pics=[];														// Project pictures
+		this.era=0;	this.title="";	this.script=""; this.allow=1;			// Defaults
+		this.ncssEras=[ "",													// NCSS eras
+			"1. Three Worlds Meet (Beginnings - 1620)",
+			"2. Colonization & Settlement (1585-1763)",
+			"3. Revolution & the New Nation (1754-1820s)",
+			"4. Expansion and Reform (1801-1861)",
+			"5. Civil War & Reconstruction (1850-1877)",
+			"6. Development of Industrial US (1870-1900)",
+			"7. Emergence of Modern America (1890-1930)",
+			"8. The Great Depression & WW-II (1929-1945)",
+			"9. Postwar US (1945 to early 1970s)",
+			"10. Contemporary US (1968 to the present)",
+			"11. The World" 
+			];
+	}
+
+	CProject.prototype.Draw=function() 									// UPDATE
+	{
+		var i,o;
+		var _this=this;														// Context
+		var title=qmf.curFile ? " - "+qmf.curFile : " - New";				// Show number
+		var x=$("#bodyDiv").offset().left+560;								// Left
+		var str="<p class='pa-bodyTitle'>Edit assignment";					// Title
+		str+="<span class='pa-proTitle' id='proTitleTitle'>"+title+"</span>"; // Add show name
+		str+="<span style='float:right'>";
+		str+=MakeSelect("proOptions",false,["Assignment options","New","Load","Save"]);
+		str+="&nbsp;&nbsp;<img src='img/helpicon.gif' style='cursor:pointer;vertical-align:-5px' onclick='ShowHelp(\"assign\")'></span><hr></p>"; 
+		str+="<table style='display:inline-block;padding-bottom:8px'>";	
+		str+="<tr><td>Title</td><td><input id='proTitle' class='pa-is' value='"+this.title+"'></input></td>";
+		str+="<td>&nbsp;&nbsp;&nbsp;&nbsp;NCSS era:</td><td>"+MakeSelect("proEra",false,this.ncssEras,this.era)+"</td></tr>";
+		str+="<tr><td>Script</td><td><textarea id='proScript' class='pa-is' style='font-family:sans-serif;padding:5px 8px 0 8px;height:40px'>"+this.script+"</textarea></td></td>";
+		str+="<td style='vertical-align:top'>&nbsp;&nbsp;&nbsp;&nbsp;Allow&nbsp;new&nbsp;pics?&nbsp;&nbsp;</td><td style='vertical-align:top'><input type='checkbox' id='proAllow'"+(this.allow ? 'checked' : "")+"></input></td></tr>";
+		str+="<tr><td>Pictures&nbsp;&nbsp;</td><td colspan='3'><div style='display:inline-block;margin-top:4px' id='picsBin'></div></td></tr></table>";
+		$("#bodyDiv").html(str);
+
+		for (i=0;i<this.pics.length;++i) {									// For each pic
+			o=this.pics[i];													// Point at pic
+			str="<div class='pa-binItem' id='binPic-"+i+"'>";				// Div start
+			str+="<div class='pa-binPic'>";									// Pic div start
+			str+="<img src='"+o.src+"' width='100%'>";						// Add it
+			str+="</div">+ShortenString(o.title,70);						// Add title
+			str+="</div>";													// Close div	
+			$("#picsBin").append(str);										// Add
+	
+			$("#binPic-"+i).on("click", function(e) {						// Add over handler
+				var id=e.currentTarget.id.substr(7);						// Get id
+				_this.ShowMetaData(id);										// Show metadata popup
+				});
+	
+			$("#binPic-"+i).draggable({										// Make it draggable, so to delete 
+				revert:true,												// Bounce back
+				stop: function(e,ui) {										// On stop
+					var id=e.target.id.substr(7);							// Get id
+					if (ui.position.left < -200) {							// Off the side
+						_this.pics.splice(id,1);							// Delete it
+						Sound("delete");									// Sound
+						Draw();												// Redraw
+						}
+					}	
+				});
+			}
+		$("#picsBin").append("&nbsp;<div id='addPics' class='pa-greenbs' style='vertical-align:42px;margin-top:36px;'>Add</div>");
+		this.FindAssignments();												// Add ind assignemnts module											
+
+		$("#addPics").on("click", function() {								// ON ADD CLICK
+			_this.AddPic();
+			});
+
+		$("#proTitle").on("change", function() {							// ON TITLE CHANGE
+			_this.title=$(this).val();										// Set 
+			});
+		
+		$("#proScript").on("change keyup paste", function() {				// ON SCRIPT CHANGE
+			_this.script=$(this).val();										// Set 
+			});
+
+		$("#proEra").on("change", function() {								// ON ERA CHANGE
+			_this.era=$(this).val();										// Set
+			});
+
+		$("#proAllow").on("click", function() {								// ON ALLOW CLICK
+			_this.allow=$(this).prop("checked") ? 1 : 0;					// Set
+			});
+		
+		$("#proOptions").on("change", function() {							// ON OPTIONS CHANGE
+			var opt=$(this).val();											// Current option
+			if (opt == "New") 												// New show
+				ConfirmBox(function() {										// Confirm 
+					_this.pics=[];		_this.era=0;	_this.title="";		// Defaults
+					_this.script=""; 	_this.allow=1;	qmf.curFile=0;		
+					_this.Draw();											// Redraw	
+					});
+			else if (opt == "Load")											// Load show
+				ConfirmBox(function() {										// Confirm 
+					qmf.Load();												// Load
+					});
+			else if (opt == "Save")	{										// Save show
+				curJson={};													// Clear
+				curJson.script=_this.script;								// Get  script 
+				curJson.title=_this.title;									// Get title 
+				for (var i=0;i<_this.ncssEras.length;++i) {					// For each era
+					if (_this.ncssEras[i] == _this.era)						// Match				
+						curJson.era=i;										// Set era index
+					}
+				curJson.binPics=$.parseJSON(JSON.stringify(_this.pics)); 	// Clone pics
+				curJson.scriptPics=[];										// Empty
+				curJson.allow=_this.allow;									// Allow
+				qmf.Save();													// Save
+				}
+			$(this).val("Assignment options");								// Restore  pulldown
+			});
+	}
+
+	CProject.prototype.FindAssignments=function() 						// FIND ASSIGNMENTS
+	{
+		var str="<hr style='margin-top:-8px'><p><span class='pa-bodyTitle'>Find other teacher's assignments</span>";	// Title
+		str+="&nbsp;&nbsp;&nbsp;&nbsp;<i>(<span id='numAssFound'>No</span> assignments found)</i>"; 			// Number of items
+		str+="<span style='float:right'>";																		// Hold controls
+		str+="Search for&nbsp;&nbsp;<input id='assSearch' class='pa-is' style='width:150px;vertical-align:0'>";	// Search
+		str+="&nbsp;&nbsp;<span id='assFind' class='pa-greenbs'>Find</span>";									// Find
+		str+="</span></p><div id='assAssets' style='height:200px' class='pa-dialogResults'></div>";				// Scrollable container
+		$("#bodyDiv").append(str);																				// Add to container
+
+		$("#assSearch").on("change", function() {							// ON SEARCH ENTER
+			$("#assFind").trigger("click");									// Trigger find
+			});
+
+		$("#assFind").on("click", function() {								// ON FIND CLICK
+			var q=$("#assSearch").val();									// Get search
+			loadAssignments(q);												// Load assignemnts
+			});
+		
+			function loadAssignments(q) {									// LOAD ASSIGNMENTS
+			$.ajax( { 	url: "//viseyes.org/pa/findshows.php",				// URL
+						data: { q:q, ver:1, email: this.email },			// Query
+						success: function(res) {							// When loaded
+							fillAssignmentTable(res);						// Fill table
+							}
+						});
+			}
+
+		function fillAssignmentTable(res) {									// FILL TABLE WITH ASSIGNMENTS FOUND
+			var i,o;
+			var trsty="class='pa-listItem'  onclick='projects.AssignmentPreview(this.id.substr(7))'";	// Row style
+			var str="<table style='width:100%'><tr><td><b>ID</b></td><td><b>Title</b></td><td style='text-align:right'><i>Click on assignment to view&nbsp; </i></td></tr>";
+			str+="<tr><td colspan='4'><hr></td</tr>";
+			res=$.parseJSON(res);											// Objectify
+			for (i=0;i<res.length;++i) {									// For each show
+				o=res[i];													// Point at it
+				str+="<tr id='assRow-"+o.id+"'"+trsty+"><td>"+o.id;			// Id
+				str+="</td><td>"+ShortenString(o.title,90);					// Title
+				str+="</td></tr>";											// End row	
+				}
+			str+="</table>"
+			$("#assAssets").html(str);										// Fill it
+			$("#numAssFound").text(res.length);								// Show number of results
+			}	
+	}
+
+	CProject.prototype.AssignmentPreview=function(num, assigned) 		//	SHOW ASSIGNMENT
+	{
+		$("#pa-webpage").remove();											// Remove old image, if any
+		var h=$("#bodyDiv").width()*.75;									// Set height
+		var x=$("#bodyDiv").offset().left+16;								// Left edge
+		var str="<div id='pa-webpage' class='pa-webpage' style='";			// Add div
+		str+="width:"+($("#bodyDiv").width()+8);							// Width
+		str+="px;height:"+(h-22)+"px;top:60px;left:"+x+"px'>";				// Finish div	
+		str+="<b>Assignment - "+num+"</b><img id='pa-close' src='img/closedot.gif' style='float:right;cursor:pointer'><br><br>"	// Add close button
+		str+="<div style='overflow:hidden'>";	
+		str+="<iframe src='index.html?"+num;
+		if (!assigned)	str+="*"											// If not an assigned
+		str+="' style='width:100%;height:"+(h-83)+"px;overflow:hidden;border:1px solid #999;border-radius:8px'></iframe>";
+		if (!assigned) {													// If a preview
+			str+="<p style='float:right'><span id='assAdd-"+num+"' class='pa-greenbs'>Add this assignment</span>";	// Add
+			str+="&nbsp;&nbsp;<span id='assCancel' class='pa-bs'>Cancel</span></p>";	// Cancel
+			}
+		$("body").append("</div>"+str+"</div>");							// Add popup
+		$("#pa-webpage").fadeIn(1000);										// Fade in
+		$("#pa-close").click(function() { $("#pa-webpage").remove(); });	// Remove on click of close but
+		$("#assCancel").click(function() { $("#pa-webpage").remove(); });	// Remove on click of cancel but
+
+		$("#assAdd-"+num).click(function(e) {								// ON ADD CLICK
+			ConfirmBox(function() {											// Are you sure?
+				var id=e.target.id.substr(7);								// Get index into script pics
+				Sound("ding");												// Ding
+				$.ajax( { url: "//viseyes.org/pa/loadshow.php?id="+id, dataType:'jsonp' });		// Load show
+				$("#pa-webpage").remove(); 									// Remove 
+				})
+			});									
+	}
+
+	function LoadShow(data) 												// GET DATA FROM LOAD SHOW
+	{
+		var o=data;																// If loading pix from a show
+		if (getPicsFromShow) {													// Get pix from show
+			GetPaRes(data.binPics);												// Send data
+			getPicsFromShow=false;												// Reset flag
+			return;																// Quit
+			}
+		if (o && o.qmfmsg && o.qmfmsg == "error") {								// Error loading
+			PopUp("<p style='color:#990000'><b>Couldn't load project!</b></p>",3000); // Popup warning
+			return;																// Quit
+			}
+		if (o.roster) {															// Must be a class
+			roster.roster=data.roster;											// Get roster
+			roster.title=data.title;											// Title
+			Draw();																// Redraw
+			SetCookie("lastClass",qmf2.curFile,7);								// Set cookie for last class loaded
+			return;																// Quit
+			}
+		SetCookie("lastAssign",qmf.curFile,7);									// Set cookie for last assign loaded
+		projects.script=data.script;											// Get script
+		projects.title=data.title;												// Title
+		if (data.era != undefined)												// If era set
+			projects.era=projects.ncssEras[data.era];							// Era
+		projects.pics=data.binPics;												// Pics
+		projects.allow=data.allow ? 1 : 0;										// Allow
+		Draw();																	// Redraw
+	}
+
+	CProject.prototype.AddPic=function() 								// ADD NEW PICTURE
+	{
+		var _this=this;														// Save context
+		var str="<p class='pa-bodyTitle'>Add picture to assignment";		// Title
+		str+="<span class='pa-proTitle' id='addSubTitle'> - (has "+this.pics.length+" pictures)</span>";	// Add # pics
+		str+="<img src='img/helpicon.gif'style='float:right;cursor:pointer' onclick='ShowHelp(\"addpic\")'><hr></p>"; 
+		str+="<div style='display:inline-block'><table>";					// Info div/table
+		str+="<tr><td>Picture title<span style='color:#990000'> *</span></td><td><input id='addTitle' type='text' class='pa-is'></td></tr>";
+		str+="<tr><td>Picture url<span style='color:#990000'> *</span></td><td><input id='addUrl' type='text' class='pa-is'></td></tr>";
+		str+="<tr><td>Description&nbsp;&nbsp;</td><td><textarea id='addDesc' type='text' class='pa-is' style='height:60px'></textarea></td></tr>";
+		str+="<tr><td>Link to website&nbsp;&nbsp;</td><td><input id='addLink' type='text' class='pa-is'>";
+		str+="<tr><td>NCSS era:</td><td>"+MakeSelect("addEra",false,this.ncssEras,this.era)+"</td></tr>";
+		str+="</table></div>";												// End div
+		str+="<div style='display:inline-block;overflow:hidden;width:300px;max-height:165px;margin-left:32px;vertical-align:top'>";
+		str+="<img id='addImg' src='img/newpreppic.png' style='margin-bottom:8px;width:300px'></div>";
+		str+="<div style='float:right'><div id='addBut' class='pa-greenbs'>&nbsp;&nbsp;Add&nbsp;&nbsp;</div>&nbsp;&nbsp";
+		str+="<div id='cancelBut' class='pa-bs'>Done</div></div>";
+		str+="&nbsp;&nbsp;<img id='zoomaddBut' title='Show large' src='img/zoomer.png' style='vertical-align:top;cursor:pointer;display:none'>";	// Zoomer button
+		$("#bodyDiv").html(str);											// Add to body
+		picFind.ImportDialog() 												// Add pix finder
+
+		$("#addBut").on("click", function() {								// ON ADD
+			var o={}
+			o.src=$("#addUrl").val() ?  ConvertFromGoogleDrive($("#addUrl").val()) : ""; // Add src
+			o.title=$("#addTitle").val() ? $("#addTitle").val() : "";		// Add title
+			o.desc=$("#addDesc").val() ? $("#addDesc").val() : "";			// Add desc
+			o.link=$("#addLink").val() ? $("#addLink").val() : "";			// Add link
+			o.era=$("#addEra").val();										// Add NCSS era
+			if (!o.title && !o.src) { PopUp("Needs a title and a url",2000,"bodyDiv"); return; }	// Needs title and url
+			if (!o.title) { PopUp("Needs a title",2000,"bodyDiv"); return; }// Needs title 
+			if (!o.src) { PopUp("Needs a url",2000,"bodyDiv"); return; }	//  Needs url
+			_this.pics.push(o);												// Add to bin
+			$("#addSubTitle").text(" - (has "+_this.pics.length+" pictures)"); // Show num pics
+			PopUp("Picture added to assignment",2000,"bodyDiv"); 			// Added!
+			Sound("ding");													// Ding
+			$("#zoomaddBut").css("display","none");							// Hide zoom button
+			$("#addImg").prop("src","img/newpreppic.png");					// Reset fields
+			$("#addUrl").val("");	
+			$("#addTitle").val("");
+			$("#addDesc").val("");
+			$("#addLink").val("");
+			});
+		
+		$("#cancelBut").on("click", function() {							// ON CANCEL
+			Draw();															// Redraw
+			});
+	
+		$("#addUrl").on("change", function() {								// ON IMAGE URL SET
+			$("#addImg").prop("src",$(this).val());							// Show it
+			$("#zoomaddBut").css("display","inline-block");					// Show zoom button
+			});
+
+		$("#zoomaddBut").on("click", function() {							// ON ZOOM BUT
+			_this.ShowPic($("#addUrl").val(),$("#addTitle").val(),$("#addDesc").val());	// Show it
+		});
+	}
+
+	CProject.prototype.ShowPic=function(src, title, desc, link) 		//	SHOW PIC
+	{
+		$("#pa-webpage").remove();											// Remove old image, if any
+		$("#metaDiv").remove();												// Kill metadata
+		var str="<div id='pa-webpage' class='pa-webpage' style='";			// Add div
+		var x=$("#bodyDiv").offset().left+22;								// Left edge
+		str+="width:"+($("#bodyDiv").width()-4);							// Width
+		str+="px;height:"+($("#bodyDiv").height()-22);						// Height
+		str+="px;top:60px;left:"+x+"px'>";									// Finish div
+		str+="<b>"+title+"</b><img id='pa-close' src='img/closedot.gif' style='float:right;cursor:pointer'><br><br>"	// Add close button
+		str+="<div style='overflow-y:auto;height:calc(100% - 30px)'><img src='"+src+"' width='100%'>";	
+		if (desc)	{														// If a description
+			str+="<br><br>"+desc;											// Add it
+			if (link)														// If a link
+				str+=" Click <a href=\""+link+"\" target=\"_blank\">here</a> for more information.";  // Add it
+			}
+		$("#bodyDiv").append("</div>"+str+"</div>");						// Add popup
+		$("#pa-webpage").fadeIn(1000);										// Fade in
+		$("#pa-close").click(function() { $("#pa-webpage").remove(); });	// Remove on click of close but
+	}
+
+	CProject.prototype.ShowMetaData=function(num) 						//	SHOW METADATA POPUP
+	{
+		$("#pa-webpage").remove();											// Remove old image, if any
+		$("#metaDiv").remove();												// Kill old one
+		var o=this.pics[num];												// Point at pic
+		if (!o.title && !o.desc) 											// If nothing to show
+			return;															// Quit
+		var _this=this;														// Save context
+		var str="<div id='metaDiv' class='pa-meta'>";						// Add div
+		str+="<img id='zoomBut' title='Show large' src='img/zoomer.png' style='vertical-align:-3px;cursor:pointer'>&nbsp;&nbsp;";	// Zoomer button
+		str+="<img id='pa-close' src='img/closedot.gif' style='float:right;cursor:pointer'>";
+		if (o.title)														// If a title
+			str+="<b>"+o.title+"</b><br><br>";								// Add it
+		if (o.desc)															// If a description
+			str+=o.desc;													// Add it
+		if (o.link)															// If a link
+			str+=" Click <a href=\""+o.link+"\" target=\"_blank\">here</a> for more information.";  // Add it
+		str+="<div id='metaArrow' class='pa-arrow-down'></div>";			// Add div
+		$("body").append(str+"</div>");										// Add popup
+		var x=$("#binPic-"+num).offset().left-160+$("#binPic-"+num).width()/2;	// Center
+		var y=$("#binPic-"+num).offset().top-10;								// Top
+		y=y-$("#metaDiv").height()-32;										// Align by bottom
+		var off=x;															// Save pos
+		x=Math.min(x,$(window).width()-360);								// Cap to window
+		off-=x;																// Offset from end
+		$("#metaArrow").css("left",Math.min(160+off,320)+"px");				// Position arrow
+			$("#metaDiv").offset({left:x,top:y});							// Position popup
+		$("#zoomBut").on("click", function() {								// Show image popup
+			_this.ShowPic(o.src,o.title,o.desc,o.link);						// Show popup		
+			});
+		$("#pa-close").click(function() {									// Click of close but
+			 $("#metaDiv").remove(); 										// Remove  
+			 });	
+
+	}
+
+</script>
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-113214874-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-113214874-1');
+</script>
+</body>
+</html>
