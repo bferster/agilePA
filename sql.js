@@ -21,11 +21,18 @@
 	var dbPath=local ? "../agileSQL/agile.db" : "./db/agile.db";						// Set path
 
 	Open()
-//	Insert('a@b.com','666',"new one","{someData:123}")
-//	GetById(0)
-	LogIn("a@b.com","999","PALOGIN");
-	Register("a@c.com","999","PALOGIN");
-Close();
+//	Save('a@b.com','666',"new one","{someData:123}")
+	LogIn("a@b.com","666","PALOGIN");
+//Load("a@b.com","PA")
+	Close();
+
+
+// SERVER /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+	
+// SQL ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	function Open()																	// OPEN DB
 	{
@@ -43,55 +50,49 @@ Close();
 	  		});
 	}
 	
-	function Insert(email, password, title, data)									// INSERT ROW
+	function SendResponse(resp)
 	{
-		db.run(`INSERT INTO pa (email, password, date, deleted, type, title, data) 
-				VALUES('${email}','${password}',datetime("now"),'0','PA','${title}','${data}')`, 
-				function(err) {
-					if (err) console.error(err.message);
-					else console.log(`A row has been inserted with rowid ${this.lastID}`);
+		console.log(resp);
+	}
+
+	function LogIn(email, password, type)											// LOGIN
+	{
+		db.all(`SELECT * FROM db WHERE email = '${email}' AND type = '${type}'`, (err, rows) => {	// Look for email
+			if (err) console.error(err.message);										// An error
+			else{																		// Good query
+				if (!rows.length) {														// No emails matched, must be a new user
+					db.run(`INSERT INTO db (email, password, date, type) VALUES('${email}','${password}',datetime("now"),'${type}')`, 
+						function(err) {													// Add their LOGIN											
+							if (err)	SendResponse(err.message);						// Error
+							else 		SendResponse("REGISTER");						// Registered
+							return;														// Quit
+							});
+						}
+				if (rows[0].password &&	(rows[0].password == password))	SendResponse("OK");	// A valid user
+				else 													SendResponse("PASSWORD");	// Bad password
+				}
+			});
+	}
+
+	function Load(email, type)														// GET ROW(S) BY EMAIL
+	{
+		db.all(`SELECT * FROM db WHERE email = '${email}' AND type = '${type}'`, (err, rows) =>{ // Query
+			if (err)	SendResponse(err.message);										// Error
+			else 		SendResponse(rows);												// Registered
+			});
+		}
+
+	function Save(email, password, title, data, type)								// SAVE ROW
+	{
+		db.run(`INSERT INTO db (email, password, date, type, title, data) 
+				VALUES('${email}','${password}',datetime("now"),'${type}','${title}','${data}')`, 
+				function(err) {															// Insert
+					if (err)	SendResponse(err.message);								// Error
+					else 		SendResponse(this.lastID);								// New row
 					});
 	}
 
-	function GetById(id)															// GET ROW BY ID
-	{
-		db.serialize(() => {
-			db.all(`SELECT * FROM pa WHERE id = '${id}'`, (err, row) => {
-			if (err) console.error(err.message);
-			else 	 console.log(row);
-			});
-		});
-	}
 
-	function GetByEmail(email)														// GET ROW(S) BY EMAIL
-	{
-		db.serialize(() => {
-			db.all(`SELECT * FROM pa WHERE email = '${email}'`, (err, row) => {
-			if (err) console.error(err.message);
-			else 	 console.log(row);
-			});
-		});
-	}
-
-// ACTIONS /////////////////////////////////////////
-
-	function LogIn(email, password, type)
-	{
-		db.all(`SELECT * FROM pa WHERE email = '${email}' AND password = '${password}' AND type = '${type}'`, (err, row) => {
-			if (err) console.error(err.message);
-			else 	 console.log(row.length);
-			});
-	}
-
-	function Register(email, password, type)
-	{
-		db.run(`INSERT INTO pa (email, password, date, type) 
-				VALUES('${email}','${password}',datetime("now"),'${type}')`, 
-				function(err) {
-					if (err) console.error(err.message);
-					else console.log(1);
-					});
-	}
-
+// HELPERS ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	function trace(msg) { console.log(msg); }
