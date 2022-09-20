@@ -1,27 +1,35 @@
 
-/* NODEJS SQLITE SERVER
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	npm install sqlite3 -g
-	npm install https
-	npm install forever
-	open port:8081
-	localhost: node sql.js
-	server: cd /opt/bitnami/wordpress/pa | forever stop sql.js | forever start sql.js 
+//  NODEJS SQLITE SERVER
 
-*/
+//	resides in sql folder under web access root
+//	npm install sqlite3 -g
+//	npm install forever
+//	npm install os
+//	open port:8081
+//	localhost: node sql.js
+//	server: cd /opt/bitnami/wordpress/sql/ws.js | forever stop ws.js | forever start ws.js 
+//	admin with sqlStudio.exe in c:/cc
 
-	const sqlite3 = require('sqlite3').verbose();
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 	var db;
+	const sqlite3 = require('sqlite3').verbose();
+	const os = require("os");	
+	let local=os.hostname().match(/^bill|desktop/i);									// Running on localhost?
+	var dbPath=local ? "../agileSQL/agile.db" : "./db/agile.db";						// Set path
 
-	Open();
-	Insert('a@b.com','666',"new one","{someData:123}")
-	GetByEmail("a@b.com");
-
-	Close();
+	Open()
+//	Insert('a@b.com','666',"new one","{someData:123}")
+//	GetById(0)
+	LogIn("a@b.com","999","PALOGIN");
+	Register("a@c.com","999","PALOGIN");
+Close();
 
 	function Open()																	// OPEN DB
 	{
-		db=new sqlite3.Database('./db/agilePA.db', (err)=> {							// Open DB
+		db=new sqlite3.Database(dbPath, (err)=> {										// Open DB
 			if (err) console.error(err.message);										// If err
 			else	 console.log('Connected to the AgileTeacher database');				// Good open
 		 	});
@@ -64,3 +72,26 @@
 			});
 		});
 	}
+
+// ACTIONS /////////////////////////////////////////
+
+	function LogIn(email, password, type)
+	{
+		db.all(`SELECT * FROM pa WHERE email = '${email}' AND password = '${password}' AND type = '${type}'`, (err, row) => {
+			if (err) console.error(err.message);
+			else 	 console.log(row.length);
+			});
+	}
+
+	function Register(email, password, type)
+	{
+		db.run(`INSERT INTO pa (email, password, date, type) 
+				VALUES('${email}','${password}',datetime("now"),'${type}')`, 
+				function(err) {
+					if (err) console.error(err.message);
+					else console.log(1);
+					});
+	}
+
+
+	function trace(msg) { console.log(msg); }
