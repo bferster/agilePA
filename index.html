@@ -361,10 +361,14 @@
 			<div id="okBut" class="pa-bs">LOG IN</div>&nbsp`;				
 		$("body").append(str+"</div>");										// Add popup
 
-		$("#okBut").on("click",async function() {									// CLICK ON OK
-			trace(await fetch(`:8081?q=login&email=${$(email).val()}&password=${$(password).val()}`)) 
-			if (callback)	callback();										// If an ok callback spec'd, run it
-			$("#dialogDiv").remove();										// Kill dialog
+		$("#okBut").on("click",  function() {									// CLICK ON OK
+			fetch(`http://localhost:8081?q=login&email=${$(email).val()}&password=${$(password).val()}`)
+				.then(res => res.text())											// Get as text
+				.then(text =>{														// Process																	
+					trace(123,text)
+					if (callback)	callback();										// If an ok callback spec'd, run it
+					$("#dialogDiv").remove();										// Kill dialog
+					});	
 			});
 	}
 

@@ -13,7 +13,6 @@
 //	server: cd /opt/bitnami/wordpress/pa | forever stop sql.js | forever start sql.js 
 //	admin with sqlStudio.exe in c:/cc
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	const sqlite3 = require('sqlite3').verbose();
 	const os = require("os");	
@@ -21,38 +20,30 @@
 	const http = require('http');
 	const fs = require('fs');
 
-	var db;																				// Holds database
+//SERVER ///////////////////////////////////////////////////////////////////////////////////////////////////
+
 	const local=os.hostname().match(/^bill|desktop/i);									// Running on localhost?
-	const dbPath=local ? "../agileSQL/agile.db" : "./db/agile.db";						// Set path
 
-//	Save('a@b.com','666',"new one","{someData:123}")
-//	Load("a@b.com","PA",(r)=>{trace(r)})
-
-
-// SERVER /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-const requestListener = function (req, res) {
-  res.writeHead(200);
-  res.end('Hello, World!');
-  trace(123)
-}
-
-const server = http.createServer(requestListener);
-server.listen(8081);
-
-/*
-
-
-	function OnRequest(req, res) {
+	const OnRequest = function (req, res) 												// REQUEST LOOP
+		{
 		try{
-			if (req.url.match(/q=login&/)) {
-			let e=(req.url.match(/email=(.*)&/))[1];
-			let pw=(req.url.match(/password=(.*)/))[1];
-			LogIn(e, pw, "PALOGIN",(r)=>{ SendResponse(r, res); });	
-			}
-		else if (req.url.match(/q=load&/)) {
-			Load("a@b.com","PA",(r)=>{ SendResponse(JSON.stringify(r), res); })
-			}
+			const headers={																	// Create headers
+				'Access-Control-Allow-Origin': '*',
+				'Access-Control-Allow-Methods': 'POST, GET',
+				'Access-Control-Max-Age': 2592000 // 30 days
+				 };
+			res.writeHead(200, headers);													// Write headers
+			let e=(req.url.match(/email=(.*)&/));											// Get email
+			let pw=(req.url.match(/password=(.*)/));										// Get pw
+			if (req.url.match(/q=login&/)) 													// LOGIN
+				LogIn(e[1], pw[1], "PALOGIN",(r)=>{ SendResponse(r, res) });				// Do login
+			else if (req.url.match(/q=load&/))												// LOAD
+				Load(e[1],"PA",(r)=>{ SendResponse(JSON.stringify(r), res); })				// Get from DB
+			else if (req.url.match(/q=save&/)) {											// SAVE
+				let title=(req.url.match(/title=(.*)/));									// Get title
+				let data=(req.url.match(/data=(.*)/));										// Get data
+				Save(e[1],ps[1],title[1],"PA",data[1],(r)=>{ SendResponse(r, res); })		// Save ot DB
+				}
 		}
 		catch(e) { console.log(e); }
 	}
@@ -66,10 +57,12 @@ server.listen(8081);
 		}
 	else server=http.createServer(OnRequest);											// Create an http server
 	server.listen(8081);																// Listen on port 8081
-*/
+	trace("SQL nodeJS Server running");
 
-	trace("Server running")
 // SQL ////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	var db;																				// Holds database
+	const dbPath=local ? "../agileSQL/agile.db" : "./db/agile.db";						// Set path
 
 	function Open()																	// OPEN DB
 	{
@@ -89,8 +82,7 @@ server.listen(8081);
 	
 	function SendResponse(msg, res)													// SEND RESPONSE
 	{
-		res.writeHead(200, {'Content-Type': 'text/html'});
-		res.end(msg);																	// Send JSON
+		res.end(msg);																	// Send message
 		console.log(msg);																// Log
 	}	
 
@@ -106,9 +98,9 @@ server.listen(8081);
 							function(err) {													// Add their LOGIN											
 								if (err)	callback(err.message);							// Error
 								else 		callback("REGISTER");							// Registered
-								return;														// Quit
 								});
-							}
+						return;																// Quit
+						}
 					if (rows[0] && rows[0].password &&	(rows[0].password == password))	callback("OK");			// A valid user
 					else 																callback("PASSWORD");	// Bad password
 					}
