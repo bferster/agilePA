@@ -258,6 +258,8 @@
 	var playAspect=.6667;													// Image aspect ratio
 	var getPicsFromShow=false;												// KLUGE!!!
 
+
+
 	$(document).ready(function() {								        // ON PAGE LOADED
 		isMobile=navigator.platform.match(/(ipad|iphone|ipod|android)/i) ? true : false; // Set mobile flag id ios
 		if (!isMobile)														// Check for Android
@@ -295,8 +297,10 @@
 				function() {	 											// When done
 					if (isFullScreen) 										// Full screen flag
 						player.SetFullScreen(2);							// Set it
-					$("#mainDiv").animate({ opacity:1},noSplash?500:2000, 	// Show interface
+					LogIn(()=>{												// Log in
+						$("#mainDiv").animate({ opacity:1},noSplash?500:2000, // Show interface
 						function() {	$("#splashDiv").remove();	});		// Remove splash screen
+						})	
 					});		
 
 		$(window).on("keydown",function(e) {								// HANDLE KEYPRESS
@@ -344,8 +348,25 @@
 				document.execCommand("insertHTML",false,text);				// Insert text
 				}
 			});
-	
 	});																		// End ready() closure								
+
+	function LogIn(callback)											// LOG IN
+	{
+		let content=`Please type your email and password below. If this is the first time here, we will create an account for you.Click <a href="forgotpassword.htm">here </a> if you gorgot your password.<br><br>
+		<p style="color:#000;font-size:14px"><b>Email / ID: </b><input class='pa-is' type='text' id='email' style="margin:4px"><br">
+		<b>Password: </b><input class='pa-is' type='text' id='password'></p>`;
+		$("#dialogDiv").remove();												// Kill old one, if any
+		let str=`<div id="dialogDiv" class="pa-meta" style="width:400px;left:calc(50% - 200px);top:calc(50% - 100px);text-align:center">
+			<span class="pa-bodyTitle">Welcome to PrimaryAccess!</span><br><br>${content}<br>	
+			<div id="okBut" class="pa-bs">LOG IN</div>&nbsp`;				
+		$("body").append(str+"</div>");										// Add popup
+
+		$("#okBut").on("click",async function() {									// CLICK ON OK
+			trace(await fetch(`:8081?q=login&email=${$(email).val()}&password=${$(password).val()}`)) 
+			if (callback)	callback();										// If an ok callback spec'd, run it
+			$("#dialogDiv").remove();										// Kill dialog
+			});
+	}
 
 	function Draw()														//  RE DRAW SCREEN
 	{
