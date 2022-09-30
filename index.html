@@ -257,6 +257,8 @@
 	var noSplash=(window.location.host == "localhost") ? true : false;		// Splash screen inhibitor
 	var playAspect=.6667;													// Image aspect ratio
 	var getPicsFromShow=false;												// KLUGE!!!
+	var userId="guest";														// Default user to guest
+	var password="";														// Passwrd
 
 
 
@@ -297,9 +299,10 @@
 				function() {	 											// When done
 					if (isFullScreen) 										// Full screen flag
 						player.SetFullScreen(2);							// Set it
-					LogIn(()=>{												// Log in
+					LogIn((id, pw)=>{										// Log in
+						userId=id; password=pw;								// Set id and pw
 						$("#mainDiv").animate({ opacity:1},noSplash?500:2000, // Show interface
-						function() {	$("#splashDiv").remove();	});		// Remove splash screen
+							()=> {	$("#splashDiv").remove();	});			// Remove splash screen
 						})	
 					});		
 
@@ -352,22 +355,45 @@
 
 	function LogIn(callback)											// LOG IN
 	{
-		let content=`Please type your email and password below. If this is the first time here, we will create an account for you.Click <a href="forgotpassword.htm">here </a> if you gorgot your password.<br><br>
+		let content=`Please type your email and password below. If this is the first time here, we will create an account for you.<br><br>
 		<p style="color:#000;font-size:14px"><b>Email / ID: </b><input class='pa-is' type='text' id='email' style="margin:4px"><br">
 		<b>Password: </b><input class='pa-is' type='text' id='password'></p>`;
-		$("#dialogDiv").remove();												// Kill old one, if any
-		let str=`<div id="dialogDiv" class="pa-meta" style="width:400px;left:calc(50% - 200px);top:calc(50% - 100px);text-align:center">
-			<span class="pa-bodyTitle">Welcome to PrimaryAccess!</span><br><br>${content}<br>	
-			<div id="okBut" class="pa-bs">LOG IN</div>&nbsp`;				
+		$("#dialogDiv").remove();											// Kill old one, if any
+		let str=`<div id="dialogDiv" class="pa-meta" style="width:400px;left:calc(50% - 200px);top:calc(50% - 180px);text-align:center">
+			<img src="img/palogo.gif"><br>${content}<br>			
+			<div id="okBut" class="pa-bs">LOG IN</div>				
+			<a style="color:black;font-size:10px;float:left" href="forgotpassword.htm" target="_blank">Forgot password?</a>
+			<span id="guest" style="cursor:pointer;font-size:10px;float:right"><u>Logon as guest</u></span>`;
 		$("body").append(str+"</div>");										// Add popup
 
-		$("#okBut").on("click",  function() {									// CLICK ON OK
-			fetch(`http://localhost:8081?q=login&email=${$(email).val()}&password=${$(password).val()}`)
-				.then(res => res.text())											// Get as text
-				.then(text =>{														// Process																	
-					trace(123,text)
-					if (callback)	callback();										// If an ok callback spec'd, run it
-					$("#dialogDiv").remove();										// Kill dialog
+		$("#guest").on("click",  function() {								// CLICK ON GUEST LOGIN
+			if (callback)	callback("guest","");							// If an ok callback spec'd, return guest
+			$("#dialogDiv").remove();										// Kill dialog
+			});
+
+		$("#okBut").on("click",  function() {								// CLICK ON OK
+			let e=$("#email").val();										// Get email
+			let p=$("#password").val();										// Get password
+			if (!e) {														// No email
+				Sound("delete");											// Delete sound
+				PopUp("Please type an email or user id");					// Alert
+				return;														// Quit
+				}		
+			if (!p) {														// No password
+				Sound("delete");											// Delete sound
+				PopUp("Please type your password");							// Alert
+				return;														// Quit
+				}		
+			fetch(`http://localhost:8081?q=login&email=${e}&password=${p}`)
+				.then(res => res.text())									// Get as text
+				.then(text =>{												// Process																	
+					if (text == "PASSWORD") {								// Bad password
+						Sound("delete");									// Delete sound
+						PopUp("Sorry, but that's not the right password");	// Alert
+						return;												// Quit
+						}		
+					if (callback)	callback(e,p);							// If an ok callback spec'd, run it
+					$("#dialogDiv").remove();								// Kill dialog
 					});	
 			});
 	}
