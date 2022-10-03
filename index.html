@@ -1516,18 +1516,20 @@
 
 	CDoc.prototype.Save=function(csv) 										// SAVE SHOW
 	{
-		curJson=this.Serialize();												// Serialize show into JSON object
 		this.changed=false;														// No unsaved changes
-		if (this.assigned)														// If assigned
-			qmf.SaveFile(this.assigned,"none");									// Save data
-		else																	// Normal save
-			qmf.Save();															// Save data
+		fetch(`http://localhost:8081?q=save&email=${userId}&password=${password}`,
+			{ method:"POST", "Content-Type":"application/json", body:JSON.stringify(this.Serialize())})
+				.then(res => res.text())									// Get as text
+				.then(text =>{												// Process																	
+					trace(text)		
+					})		
+				
+
 	}
 
 	CDoc.prototype.Load=function(csv) 										// SAVE SHOW
 	{
 		this.changed=false;														// No unsaved changes
-		qmf.Load();																// Get data
 	}
 	
 	function LoadShow(data) 												// GET DATA FROM LOAD SHOW

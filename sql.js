@@ -40,9 +40,13 @@
 			else if (req.url.match(/q=load&/))												// LOAD
 				Load(e[1],"PA",(r)=>{ SendResponse(JSON.stringify(r), res); })				// Get from DB
 			else if (req.url.match(/q=save&/)) {											// SAVE
-				let title=(req.url.match(/title=(.*)/));									// Get title
-				let data=(req.url.match(/data=(.*)/));										// Get data
-				Save(e[1],ps[1],title[1],"PA",data[1],(r)=>{ SendResponse(r, res); })		// Save ot DB
+				let body="";
+				req.on('data', function(data) {	body+=data;	});
+				req.on('end', function(data) {
+					let title=JSON.parse(body).title
+					trace(title)
+					Save(e[1], pw[1], title, body, "PA", (r)=>{ SendResponse(r, res); });	// Save to DB
+					});
 				}
 		}
 		catch(e) { console.log(e); }
@@ -123,16 +127,17 @@
 		catch(e) { console.log(e) }
 	}
 
-	function Save(email, password, title, data, type)								// SAVE ROW
+	function Save(email, password, title, data, type, callback)							// SAVE ROW
 	{
 			try{
 			Open();																		// Open DB
+			trace(email, password, title, data, type)
 			db.run(`INSERT INTO db (email, password, date, type, title, data) 
 					VALUES('${email}','${password}',datetime("now"),'${type}','${title}','${data}')`, 
 					function(err) {														// Insert
-						if (err)	SendResponse(err.message);							// Error
-						else 		SendResponse(this.lastID);							// New row
-						});
+						if (err)	callback(err.message);								// Error
+						else 		callback("OK");										// OK
+				});
 			Close();																	// Close db
 			}
 		catch(e) { console.log(e) }
