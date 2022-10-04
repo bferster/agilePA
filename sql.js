@@ -37,13 +37,15 @@
 			let pw=(req.url.match(/password=(.*)/));										// Get pw
 			if (req.url.match(/q=login&/)) 													// LOGIN
 				LogIn(e[1], pw[1], "PALOGIN",(r)=>{ SendResponse(r, res) });				// Do login
+			else if (req.url.match(/q=list&/))												// LIST
+				List(e[1],"PA",(r)=>{ SendResponse(JSON.stringify(r), res); })				// Get from DB
 			else if (req.url.match(/q=load&/))												// LOAD
 				Load(e[1],"PA",(r)=>{ SendResponse(JSON.stringify(r), res); })				// Get from DB
 			else if (req.url.match(/q=save&/)) {											// SAVE
-				let body="";
-				req.on('data', function(data) {	body+=data;	});
-				req.on('end', function(data) {
-					let title=JSON.parse(body).title
+				let body="";																// Hold body
+				req.on('data', function(data) {	body+=data;	});								// ON data
+				req.on('end', function() {													// On done
+					let title=JSON.parse(body).title;										// Get title
 					Save(e[1], pw[1], title, body, "PA", (r)=>{ SendResponse(r, res); });	// Save to DB
 					});
 				}
@@ -113,13 +115,26 @@
 		catch(e) { console.log(e) }
 	}
 
-	function Load(email, type, callback)												// GET ROW(S) BY EMAIL
+	function List(email, type, callback)												// GET LIST OF ROW(S) BY EMAIL
 	{
 		try{
 			Open();																			// Open DB
 			db.all(`SELECT * FROM db WHERE email = '${email}' AND type = '${type}'`, (err, rows) => { 	// Query
 				if (err)	callback(err.message);											// Error
 				else 		callback(rows);													// Registered
+				});
+			Close();																		// Close db
+		}
+		catch(e) { console.log(e) }
+	}
+
+	function Load(id, callback)															// GET ROW BY ID
+	{
+		try{
+			Open();																			// Open DB
+			db.all(`SELECT * FROM db WHERE id = '${id}''`, (err, row) => { 					// Query
+				if (err)	callback(err.message);											// Error
+				else 		callback(row);													// Registered
 				});
 			Close();																		// Close db
 		}

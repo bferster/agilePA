@@ -25,7 +25,7 @@
 		.pa-script {		position: absolute; left:0; top:0; height: calc(100% - 150px); 
 							background-color:#fff; overflow-y: scroll;
 							}
-		.pa-titleEdit {		width: calc(100% - 200px); margin-left: 176px; margin-top: 20px; 
+		.pa-titleEdit {		width: calc(100% - 206px); margin-left: 176px; margin-top: 20px; 
 		 					font-weight: bold; font-size: 30px;
 							}
 		.pa-saveIndicator { position: absolute; left:60px; top:30px; color:#27ae60; font-size:14px; display:none;
@@ -40,6 +40,10 @@
 							padding: 16px; font-size: 24px; line-height: 175%;
 							}
 		.pa-scriptText:focus{ outline:none;	
+							}
+		.pa-load {			border-radius:10px; width:1px; padding:0 8px; border: 1px solid #999; 
+							cursor:pointer;	float:right; margin:-28px 8px 0 0; font-size:14px;					
+							padding-left: 8px; padding-right: 8px; padding-top: 1px;
 							}
 
 		/* PLAYER --------------------------------------------------------------------------------------------------*/
@@ -153,9 +157,10 @@
 </head>
 <body>
 	<div id="mainDiv" class="pa-main">
-		<div id="scriptDiv" class="pa-script">
+		<div id="scriptDiv">
 			<div id="saveIndicatorDiv" class="pa-saveIndicator"></div>
 			<div id="titleDiv" contenteditable="true" class="pa-titleEdit"></div>
+			<select id="loadBut" class="pa-load " title="Load project"><option value="">--------------------------------------------------------------------</option></select>
 			<div id="scriptPixDiv" class="pa-scriptPix"></div>	
 			<div id="scriptDivider" style="position:absolute;background-color:#99cc99;;width:6px;top:20px;left:160px;border-radius:4px;"></div>	
 			<div id="scriptTextDiv" contenteditable="true" class="pa-scriptText"></div>		
@@ -550,10 +555,42 @@
 						})		
 		}
 
-		Load(csv) 																// SAVE SHOW
+		Load(id) 																// SAVE SHOW
 		{
 			this.changed=false;														// No unsaved changes
+			fetch(`http://localhost:8081?q=loadt&id=${id}`)
+					.then(res => res.json())										// Get as text
+					.then(data =>{													// Process
+						trace(data)																	
+						})
 		}
+
+		GetProjects(all) 														// GET SHOWS
+		{
+			let i,j;
+			let str="<option value=''></option>";									// Blank line
+			let days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];					// Days of the week
+			fetch(`http://localhost:8081?q=list&email=${userId}&password=${password}`)
+					.then(res => res.json())										// Get as text
+					.then(data =>{													// Process																	
+						data.sort((a,b)=> { return b.id-a.id });					// Sort by date
+						if (!all) {													// Just the latest ones
+							for (i=0;i<data.length;++i) 							// For each file 
+								for (j=i+1;j<data.length;++j) 						// For each file after it
+									if (data[i].title == data[j].title)	data[j].title=""; // Remove it
+								}
+						for (i=0;i<data.length;++i) {								// For each file loaded
+							let d=new Date(data[i].date);							// Get date
+							let h=d.getHours();										// Get hours
+							if (h > 12)	h-=12;										// 24 -> 12
+							if (data[i].title)  									// A valid title
+								str+=`<option value=${data[i].id}>${days[d.getDay()]} ${(""+h).padStart(2,0)}:${(""+d.getMinutes()).padStart(2,0)} &nbsp; ${data[i].title}</option>`;
+							}
+						$("#loadBut").empty()										// Remove options
+						$("#loadBut").append(str);									// Add options
+						$("#loadBut").show();										// Resize
+					});		
+			}
 
 		RecordMP3() 															// RECORD MP3
 		{

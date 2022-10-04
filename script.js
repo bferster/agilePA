@@ -38,9 +38,20 @@ class CScript {
 			player.maxTime=$("#scriptTextDiv").text().length*player.speechRate; // Set max time
 			$("#endTime").text(SecondsToTimecode(Math.round(player.maxTime)));// End display
 			});
+	
 		$("#titleDiv").on("change keyup paste", ()=> {						// ON TITLE CHANGE
 			doc.changed=true;												// Set changed flag
 			});
+	
+		$("#loadBut").on("click", (e)=> {									// ON LOAD CLICK
+			doc.GetProjects(e.shiftKey);									// Get project list
+			});	
+
+		$("#loadBut").on("change", (e)=>{									// ON LOAD SELECT
+			let v=$('#loadBut').val();										// Get selected value
+			if  (v == "all") 	doc.GetProjects(true);						// Recurse for all
+			if (!isNaN(v))		doc.Load(v);								// Load project
+			});	
 		}
 
 	ResizeImageArea() 													//	MATCH IMAGE AREA TO TEXT AREA
@@ -230,9 +241,9 @@ class CScript {
 		
 		constructor()														//  CONSTRUCTOR
 		{
-			var str="<img style='padding-top:16px' src='img/shantilogo.png'>"; 
-			str+="<br><img  src='img/helpicon.gif'style='width:20px;margin:6px;margin-bottom:12px;cursor:pointer' onclick='bin.ShowHelp()'>"; 
-			str+="<div style='color:#888;font-size:11px;line-height:100%'> &copy; 2018 University<br>of Virginia</div>";
+			var str="<img style='margin:20px 0 3px 0;width:120px' src='img/agilelogo.png'>"; 
+			str+="<img  src='img/helpicon.gif'style='width:20px;margin:6px;margin-bottom:12px;cursor:pointer' onclick='bin.ShowHelp()'>"; 
+			str+="<div style='color:#888;font-size:11px;line-height:100%'> &copy;2022 StageTools</div>";
 			$("#binMenuDiv").html(str);											// Show menu
 			$("#binDiv").disableSelection();									// Inhibit selection
 			this.pics=[];														// Alloc pics array
