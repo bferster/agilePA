@@ -44,7 +44,6 @@
 				req.on('data', function(data) {	body+=data;	});
 				req.on('end', function(data) {
 					let title=JSON.parse(body).title
-					trace(title)
 					Save(e[1], pw[1], title, body, "PA", (r)=>{ SendResponse(r, res); });	// Save to DB
 					});
 				}
@@ -131,7 +130,6 @@
 	{
 			try{
 			Open();																		// Open DB
-			trace(email, password, title, data, type)
 			db.run(`INSERT INTO db (email, password, date, type, title, data) 
 					VALUES('${email}','${password}',datetime("now"),'${type}','${title}','${data}')`, 
 					function(err) {														// Insert

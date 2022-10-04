@@ -11,7 +11,8 @@
 	<script src="lib/jquery.ui.touch-punch.min.js"></script>
 	<script src="helpers.js"></script>
 	<script src="images.js"></script>
-	<script src="qfile.js"></script>
+	<script src="player.js"></script>
+	<script src="script.js"></script>
 	<style type="text/css">
 		 body { 			font-family: Verdana,Geneva,sans-serif; font-size: 13px;  
 							padding: 0; margin:0px; 
@@ -26,6 +27,8 @@
 							}
 		.pa-titleEdit {		width: calc(100% - 200px); margin-left: 176px; margin-top: 20px; 
 		 					font-weight: bold; font-size: 30px;
+							}
+		.pa-saveIndicator { position: absolute; left:60px; top:30px; color:#27ae60; font-size:14px; display:none;
 							}
 		.pa-scriptPix {		display: inline-block; width: 126px; padding: 16px; height: 80%;
 							color: #999; text-align:center; cursor:url(img/moveud.cur),auto;
@@ -151,6 +154,7 @@
 <body>
 	<div id="mainDiv" class="pa-main">
 		<div id="scriptDiv" class="pa-script">
+			<div id="saveIndicatorDiv" class="pa-saveIndicator"></div>
 			<div id="titleDiv" contenteditable="true" class="pa-titleEdit"></div>
 			<div id="scriptPixDiv" class="pa-scriptPix"></div>	
 			<div id="scriptDivider" style="position:absolute;background-color:#99cc99;;width:6px;top:20px;left:160px;border-radius:4px;"></div>	
@@ -180,8 +184,6 @@
 				<option>Set motion</option>
 				<option>Full screen</option>
 				<option value="addNewPic">Add new picture</option>
-				<option value="loadShow">Load project</option>
-				<option>Save project</option>
 				<option>Get project link</option>
 				</select>
 			<img id="playBut" class="pa-playbut" src="img/playbut.gif"><br>
@@ -251,16 +253,12 @@
 	var chat=null;															// CChat
 	var player=null;														// CPplayer
 	var findPic=null;														// Image finder
-	var qmf=null;															// QFile system
 	var isMobile=false;														// Is a mobile platform
 	var isFullScreen=0;														// Is it full screen?
 	var noSplash=(window.location.host == "localhost") ? true : false;		// Splash screen inhibitor
 	var playAspect=.6667;													// Image aspect ratio
-	var getPicsFromShow=false;												// KLUGE!!!
 	var userId="guest";														// Default user to guest
 	var password="";														// Passwrd
-
-
 
 	$(document).ready(function() {								        // ON PAGE LOADED
 		isMobile=navigator.platform.match(/(ipad|iphone|ipod|android)/i) ? true : false; // Set mobile flag id ios
@@ -275,21 +273,20 @@
 		script=new CScript();												// Alloc CScript module
 		player=new CPlayer();												// Alloc CPlayer module
 		picFind=new CImageFind("dialogDiv");								// Alloc CImageFind module
-		qmf=new QmediaFile("https://viseyes.org/pa/",0);					// Alloc file system
 		if (url) { 															// A doc set
 			if (url.length == 9) {											// An assignemnt key		
 				if (parseInt(url.charAt(0),16)&8)							// If 4th bit set
 					chat.who=1;												// It's the teacher talking
 				doc.assigned=url;											// Save assigned id
 				$("#picOptions").append("<option>Chat</option>");			// Add chat option
-				qmf.LoadFile("123"+url,false);								// Load and set id, padded
+//				qmf.LoadFile("123"+url,false);								// Load and set id, padded
 				}
 			else{															// Numbered load
 				if (!url.match(/\*/)) 										// Full screen flag
 					isFullScreen=2;											// Starting full										
 				else
 					url=url.substr(0,url.length-1);							// Remove *
-				qmf.LoadFile("123"+url,true);								// Load, but don't set id, padded
+//				qmf.LoadFile("123"+url,true);								// Load, but don't set id, padded
 				}
 			}	
 		else																// No doc													
@@ -334,10 +331,6 @@
 				player.ScalePic(100,66,"#startImg",script.pics[player.curPic].pos[0]); // Set start
 				player.ScalePic(100,66,"#endImg",script.pics[player.curPic].pos[1]);   // Set end
 				}
-			else if ((e.which == 84) && e.altKey && e.ctrlKey)				// CTRL+ALT (TEST)
-				myTest()
-			else if ((e.which == 84) && e.altKey)							// ALT-T (STT)
-				script.SpeechToText();										// Talk in script
 			else if ((e.which == 84) && e.altKey && e.ctrlKey)				// CTRL+ALT (TEST)
 				myTest()
 			});
@@ -409,8 +402,6 @@
 				$("#picOptions option[value='addNewPic']").hide();			// Remove option from menu
 			else															// All it
 				$("#picOptions option[value='addNewPic']").show();			// Restore option from menu
-				if (doc.assigned)
-				$("#picOptions option[value='loadShow']").hide();			// Remove option from menu
 			player.InitAudio();												// Init audio
 			player.Draw();													// Redraw player
 			}
@@ -449,1205 +440,203 @@
 			player.SetFullScreen(isFullScreen);								// Exit mode
 	}
 
-
-//////////////////////////////////////////////////////////////////////////////////////////////////
-// PLAYER
-/////////////////////////////////////////////////////////////////////////////////////////////////
-
-	function CPlayer()													// PLAYER CONSTRUCTOR
-	{
-		this.curPic=-1;														// Currently active picture
-		this.inPlay=this.inMove=0;											// Default modes
-		var _this=this;														// Save context
-		this.curTime=0;														// Start at 0
-		this.pos=[.5,.5,1];													// Current position
-		this.audio=null;													// Audio object
-		this.voice=0;	this.pitch=100;										// TTS options
-		this.speechRate=.064;												// Seconds per char
-		this.maxTime=18.5;													// Maximum time
-		this.audioRate=100;													// Rate multiplier
-		this.drift=0;														// TTS drift for char pos
-		this.startCharPos=0;												// Starting char in script of TTS
-
-		$("#moveDiv").fadeOut(0);											// Hide move controls
-		$("#startPic").height($("#startPic").width*playAspect);				// Scale to aspect
-		$("#endPic").height($("#endPic").width*playAspect);					// Scale to aspect
-		
-		this.GetVoiceList()													// Set voice list up, in case event to triggered
-		speechSynthesis.onvoiceschanged=function() {						// React to voice init
-			_this.GetVoiceList();											// Set voice list up
-			};
-
-		$("#sliderDiv").draggable( {										// Draggable slider
-			axis: "x",														// X axis
-			containment: "parent",											// Constrain
-			drag: function(event, ui) {										// On drag
-				if (!_this.inMove) {										// Not in motion editor
-					_this.curTime=ui.position.left/($("#sliderBarDiv").width()-4)*_this.maxTime; // Set time
-					_this.Draw();											// Show position
-					}
-				}
-			})
-
-		$("#screenDiv").on("click", function() {							// ON SCREEN CLICK
-			if (isFullScreen == 1) 											// If full screen
-				_this.SetFullScreen(0);										// Exit mode
-			});	
-			
-		$("#playerDiv").on("click", function() {							// ON PLAYER CLICK
-			$("#metaDiv").remove();											// Kill metadata popup
-			});
-
-		$("#startTime").on("click", function() {							// ON START TIME CLICK
-			_this.curTime=0;												// Set curtime to 0
-			_this.Draw();													// Show position
-			});
-
-		$("#playBut").on("click", function() {								// ON PLAYBUT CLICK
-			_this.inPlay=!_this.inPlay;										// Toggle state
-			if (_this.inMove) {												// In motion editor
-				var s=script.pics[_this.curPic].start*_this.speechRate;		// Start
-				var se=script.pics[_this.curPic].end*_this.speechRate;		// End
-				_this.Play(s,se);											// Play or pause this clip
-				}
-			else
-				_this.Play(0,-1);											// Play to end or pause
-			});
-
-		$("#picOptions").on("change", function() {							// ON PIC OPTIONS CHANGE
-			if (($(this).val() == "Set motion") && (_this.curPic != -1)) {	// If setting motion on a valid pic
-				doc.Do();													// Save a do
-				_this.InitMotionEditor(1);									// Draw motion editor
-				$("#moveDiv").fadeIn();										// Show move controls
-				}
-			else if ($(this).val() == "addNewPic")							// Add pic (use value!)
-				bin.AddPic();												// Run pic dialog
-			else if ($(this).val() == "Full screen") {						// Full screen
-				_this.SetFullScreen(1);										// Show full
-				}
-			else if ($(this).val() == "loadShow") {							// Load show (use value!)
-				doc.Do();													// Save a do
-				doc.Load();													// Load file 
-				}	
-			else if ($(this).val() == "Save project") 						// Save show
-				doc.Save();													// Save file
-			else if ($(this).val() == "Get project link") 					// Get link to show
-				doc.GetLink();												// Show link
-			else if ($(this).val() == "Chat") 								// Chat
-				chat.Open();												// Open
-			$(this).val("Picture options");									// Set menu to default
-			});
-
-		$("#soundOptions").on("click", function() {							// ON SOUND OPTIONS CLICK
-			doc.Do();														// Save a do
-			_this.SoundSettings();											// Change sound settings	
-			$(this).val("Sound options");									// Set menu to default
-			}); 
-	
-		$("#moveDoneBut").on("click", function() {							// ON MOVE DONE CLICKED
-			_this.inMove=0;													// Moving start
-			$("#picOptions").val("Picture options");						// Restore menu
-			$("#moveDiv").fadeOut(0);										// Hide move controls
-			$("#cameraDiv").remove();										// Remove camera
-			$("#playerDiv").height($("#scriptDiv").height());				// Shorten
-			script.pics[_this.curPic].pos[0][3]=$("#slowInBut").prop("checked") ? 1 : 0;
-			script.pics[_this.curPic].pos[1][3]=$("#slowOutBut").prop("checked") ? 1 : 0;
-			_this.Draw();													// Draw screen
-			script.Draw();													// Draw script
-			});
-
-		$("#startPic").on("click", function() {								// ON MOVE START CLICK
-			_this.InitMotionEditor(1);										// Draw motion editor
-			});
-		
-		$("#endPic").on("click", function() {								// ON MOVE END CLICK
-			_this.InitMotionEditor(2);										// Draw motion editor
-			});
-		
-		$("#matchBut").on("click", function() {								// ON MATCH CLICK
-			script.pics[_this.curPic].pos[0][0]=script.pics[_this.curPic-1].pos[1][0];		// Match x from last
-			script.pics[_this.curPic].pos[0][1]=script.pics[_this.curPic-1].pos[1][1];		// y
-			script.pics[_this.curPic].pos[0][2]=script.pics[_this.curPic-1].pos[1][2];		//z
-			_this.DrawCamera(0);											// Camera position
-			Sound("ding");													// Ding					
-			_this.ScalePic(100,66,"#startImg",script.pics[_this.curPic].pos[0]);	 // Set start
-			});
-
-		$("#playerDiv").disableSelection();									// Inhibit selection
-	}
-
-	CPlayer.prototype.Draw=function() 									// UPDATE PLAYER
-	{
-		$("#startTime").text(SecondsToTimecode(Math.round(this.curTime)));	// Start display
-		$("#endTime").text(SecondsToTimecode(Math.round(this.maxTime)));	// End display
-		var x=$("#sliderBarDiv").offset().left-8;							// Set left
-		var y=Math.round($("#sliderBarDiv").offset().top+10);				// Set top
-		if (this.maxTime) 													// If some time in script
-			x+=Math.min(this.curTime/this.maxTime,1)*($("#sliderBarDiv").width()-20);	// Move slider into position
-		$("#sliderDiv").offset({ left:x, top:y });							// Set slider						
-		var num=script.GetPicFromTime(this.curTime);						// Get current pic
-		if (num != -1) {													// If on a picture
-			$("#screenPic").show(0);										// Show pic
-			this.curPic=num;												// Set current pic
-			var o=script.pics[num];											// Point at pic
-			$("#screenPic").prop("src",bin.pics[o.num].src);				// Set src
-			var pct=(this.curTime-(o.start*this.speechRate))/(o.dur*this.speechRate);	// Point in move
-			pct=Math.min(pct,1);											// Cap to 1
-			if (o.pos[0][3] && o.pos[0][3])									// Both
-				pct=1.0-((Math.cos(3.1414*pct)+1)/2.0);						// Full cosine curve
-			else if (o.pos[0][3])											// Slow in
-				pct=1.0-(Math.cos(1.5707*pct));								// 1st quadrant of cosine curve
-			else if (o.pos[1][3])											// Slow out
-				pct=1.0-(Math.cos(1.5707+(1.5707*pct))+1.0);				// 2nd quadrant of cosine curve
-			pct=Math.min(Math.max(pct,0),1);								// Cap 0-1
-			this.pos[0]=(o.pos[0][0]+((o.pos[1][0]-o.pos[0][0])*pct));		// Calc x
-			this.pos[1]=(o.pos[0][1]+((o.pos[1][1]-o.pos[0][1])*pct));		// Calc y
-			this.pos[2]=(o.pos[0][2]+((o.pos[1][2]-o.pos[0][2])*pct));		// Calc w
-			this.ScalePic($("#screenDiv").width(),$("#screenDiv").height(),"#screenPic",this.pos); // Set start
-			}
-		else																// No pic
-			$("#screenPic").hide(0);										// Hide it
-		script.Highlight("#0000ff",this.curTime/this.speechRate,-1);		// Highlight position in text						
-		if (isFullScreen && !this.curTime)									// If full screen
-			$("#screenTitleDiv").fadeIn(0);									// Fade title in
-	}
-
-	CPlayer.prototype.SetFullScreen=function(mode)						// FULL SCREEN
-	{
-		isFullScreen=mode;													// Set flag
-		if (mode) {															// If full screen
-			$("body").css({ "background-color":"#ddd", overflow:"hidden" });// Grey background, hide overflow
-			$("#mainDiv").css({ "min-width":"0px" });						// Remove min-wid 
-			$("#picOptions").fadeOut(0);	$("#soundOptions").fadeOut(0);	// Hide options
-			$("#scriptDiv").fadeOut();										// Fade out script
-			$("#binDiv").fadeOut();											// Bin
-			var ww=$(window).width();                                       // Get window width
-            var wh=$(window).height();                                      // Get window height
-            var h=wh-130;                                                   // Use screen height as dominant
-            var w=h/playAspect;                                             // Screen width to aspect
- 		    if (w > ww-32) {                                               	// Too narrow
-                w=ww-32;                                                    // Size by width
-                h=w*playAspect;                                             // Height follows width
-                }
-            $("#screenDiv").height(h);                                      // Size screen height
-            $("#screenDiv").width(w);                                       // Width    
-            $("#playerDiv").width(w+32);                                    // Player width
-            $("#playerDiv").height(wh);                                     // Player height
-			var x=($(window).width()-$("#playerDiv").width())/2;			// Center
-			$("#playerDiv").offset({ left:Math.max(0,x), top:0 });			// Top left
-			$("#screenTitleDiv").text($("#titleDiv").text());				// Set title
-			$("#screenTitleDiv").css({ "font-size":h/10+"px",padding:(w/8)+"px","padding-top":(h/2.5)+"px", width:(w-w/4+32)+"px" });			
-			$("#screenTitleDiv").fadeOut(0).fadeIn(0);						// Fade title in
-			this.Draw();													// Redraw
-			}
-		else{																// If regular screen
-			$("#screenTitleDiv").text("");									// No title
-			$("body").css({ "background-color":"#fff", overflow:"auto" });	// White back, overflow
-			$("#mainDiv").css({ "min-width":"768px" });						// Restore min-wid
-			$("#binDiv").fadeIn();											// Fade bin in
-			$("#scriptDiv").fadeIn();										// Script
-			$("#picOptions").fadeIn(0);	$("#soundOptions").fadeIn(0);		// Show options
-			this.inPlay=false;												// Force stop playing
-			this.Play(0,0);													// Stop
-			ResizePanes();
-			}
-	}
-
-	CPlayer.prototype.InitMotionEditor=function(mode)					// INIT MOTION EDITOR
-	{
-		var onCol="#009900", offCol="#666";									// Colors
-		this.inMove=mode;													// Set moving mode to head
-		var _this=this;														// Save context
-		var num=script.pics[this.curPic].num;								// Picture to move
-		$("#screenPic").prop("src",bin.pics[num].src);						// Set src
-		var w=$("#screenPic")[0].naturalWidth/$("#screenPic")[0].naturalHeight*$("#screenDiv").height();
-		$("#screenPic").css("transform","translate(0px,0px)");				// Identity matrix
-		$("#screenPic").css({ height:"100%",left:0,top:0,width:w+"px"});	// Top left, full height
-		this.picWid=$("#screenPic").width();								// Save width
-		this.picHgt=$("#screenDiv").height();								// Save height
-		if ((this.curPic > 0) && (script.pics[this.curPic].num == script.pics[this.curPic-1].num))  // Same pic as last
-			$("#matchBut").css("display","inline-block");					// Show match button
-		else																// Different
-			$("#matchBut").css("display","none");							// Hide match button
-		$("#playerDiv").height($("#scriptDiv").height()+150);				// Extend full screen
-		$("#startDiv").css("color",offCol);									// Mute start text
-		$("#endPic").css("border","3px solid "+offCol);						// And border
-		$("#endDiv").css("color",offCol);									// Mute end text
-		$("#startPic").css("border","3px solid "+offCol);					// And border
-		$("#slowInBut").prop("checked",script.pics[this.curPic].pos[0][3] == 1);	// Set in checkbox
-		$("#slowOutBut").prop("checked",script.pics[this.curPic].pos[1][3] == 1)	// Set out
-		$("#startPic").html("<img id='startImg' src='"+bin.pics[num].src+"' style='position:relative'>");	
-		$("#endPic").html("<img id='endImg' src='"+bin.pics[num].src+"' style='position:relative'>");	
-		this.ScalePic(100,66,"#startImg",script.pics[this.curPic].pos[0]);	// Init start
-		this.ScalePic(100,66,"#endImg",script.pics[this.curPic].pos[1]);	// Init end
-		
-		$("#startPic").draggable({ zIndex: 100, axis: "x",					// Make start draggable to copy position to end
-				stop: function(event, ui) {									// On drag stop
-					if (ui.position.left > 100) {							// Over end 
-						script.pics[_this.curPic].pos[1]=script.pics[_this.curPic].pos[0].slice(0);	// Clone key
-						Sound("ding");										// Ding					
-						_this.ScalePic(100,66,"#endImg",script.pics[_this.curPic].pos[1]);	 // Set end
-						$(this).css("left",0);								// Revert
-						$("#endPic").trigger("click");						// Highight end				
-						}
-					}
-				})
-
-		$("#endPic").draggable({ zIndex: 100, axis: "x",					// Make end draggable to copy position to start
-				stop: function(event, ui) {									// On drag stop
-					if (ui.position.left < 100) {							// Over end 
-						script.pics[_this.curPic].pos[0]=script.pics[_this.curPic].pos[1].slice(0);	// Clone key
-						Sound("ding");										// Ding					
-						_this.ScalePic(100,66,"#startImg",script.pics[_this.curPic].pos[0]);	 // Set start
-						$(this).css("left",0);								// Revert image
-						$("#startPic").trigger("click");					// Highight start					
-						}
-					}
-				})
-
-		if (mode == 1 ) {													// Set start
-			$("#startDiv").css("color",onCol);								// Hilite  text
-			$("#startPic").css("border","3px solid "+onCol);				// And border
-			this.DrawCamera(0);												// Camera position
-			}
-		if (mode == 2 ) {													// Set end
-			$("#endDiv").css("color",onCol);								// Hilite  text
-			$("#endPic").css("border","3px solid "+onCol);					// And border
-			this.DrawCamera(1);												// Camera position
-			}
-		}
-
-	CPlayer.prototype.ScalePic=function(wid, hgt, image, pos)			// POSITION IMAGE
-	{
-		var nw=$(image)[0].naturalWidth;									// Get true width
-		var nh=$(image)[0].naturalHeight;									// Get true height
-		var fs=wid/nw;														// Frame scaling
-		var s=1/pos[2];														// Reciprocal scale
-		var w=nw*s*fs;														// Get image width scaled
-		var h=nh*s*fs;														// Get image height
-		var l=w*pos[0]-(w/s/2);												// Get left
-		var t=h*pos[1]-(hgt/2);												// Get top
-		$(image).width(w); $(image).height(h);								// Size	
-		$(image).css("transform","translate("+-l+"px,"+-t+"px)");			// Position
-	} 
-
-	CPlayer.prototype.DrawCamera=function(which) 						// DRAW CAMERA
-	{
-		var _this=this;														// Save context
-		$("#cameraDiv").remove();											// Remove old one
-		var o=script.pics[this.curPic].pos[which];							// Point at position based on side
-		var w=$("#screenPic").width()*o[2]-1;								// Calc width
-		var h=$("#screenPic").height()*o[2]-1;								// Calc height
-		var str="<div id='cameraDiv' style='width:"+w+"px;height:"+w*playAspect;	// Size
-		str+="px;cursor:url(img/move.cur),auto; ";							// Cursor
-		str+= "px;border:1px solid yellow;position:absolute;border-radius:0px'>"
-		str+="<div style='width:calc(100% - 4px);height:calc(100% - 4px);";
-		str+= "border:2px solid #000;border-radius:0px'>";
-		str+="<div style='width:calc(100% - 2x);height:calc(100% - 2px);";
-		str+= "border:1px solid yellow;border-radius:0px'></div></div>"
-		str+="<div id='camSizerBut' style='width:30px;height:32px;";
-		str+="float:right;margin:-15px;cursor:nw-resize'>"
-		str+="<div style='width:0;height:0;border-bottom: 10px solid yellow;";	
-		str+="border-left: 10px solid transparent'</div></div>";
-		$("#screenDiv").append("</div>"+str);								// Add camera to screen
-		var cx=this.picWid*o[0]+(o[0]-w/2)+14;								// Calc camera left
-		var cy=this.picHgt*o[1]+(o[1]-w*playAspect/2)+14;					// And top
-		$("#cameraDiv").css({ left:cx, top:cy });							// Position camera
-		$("#cameraDiv").draggable({											// Make camera draggable
-			stop: function(event, ui) {										// On drag stop
-				o[0]=(ui.position.left-14+$("#cameraDiv").width()/2)/$("#screenPic").width();	// Calc x
-				o[1]=(ui.position.top-14+$("#cameraDiv").height()/2)/$("#screenPic").height();	// Calc y
-				_this.ScalePic(100,66,"#startImg",script.pics[_this.curPic].pos[0]); // Set start
-				_this.ScalePic(100,66,"#endImg",script.pics[_this.curPic].pos[1]);	 // Set end
-				}
-			});
-		$("#camSizerBut").draggable({										// Make resizer draggable
-			axis:"x",														// Constrict to x axis
-			drag: function(event, ui) {										// On drag
-				var x=event.pageX-$("#cameraDiv").offset().left;			// Position of camera left
-				x=Math.max(x,25);											// Not too small
-				$("#cameraDiv").width(x);									// Size camera width
-				$("#cameraDiv").height(x*playAspect);						// Height is proportional
-				$(this).css("display","none");								// Hide resizer while dragging
-				},
-			stop: function(event, ui) {										// On drag stop
-				$(this).css({display:"inline-block",left:"0px"});			// Force in box
-				o[2]=$("#cameraDiv").width()/$("#screenPic").width();		// Set width
-				o[0]=($("#cameraDiv").position().left-14+$("#cameraDiv").width()/2)/$("#screenPic").width();	// Calc x
-				o[1]=($("#cameraDiv").position().top-14+$("#cameraDiv").height()/2)/$("#screenPic").height();	// Calc y
-				_this.ScalePic(100,66,"#startImg",script.pics[_this.curPic].pos[0]); // Set start
-				_this.ScalePic(100,66,"#endImg",script.pics[_this.curPic].pos[1]);	 // Set end
-				}
-			});
-	}
-
-	CPlayer.prototype.Play=function(start, end)							// START / STOP PLAYING 
-	{
-		var _this=this;														// Save context
-		$("#cameraDiv").remove();											// Remove camera
-		if (this.inPlay) {													// If playing
-			$("#screenTitleDiv").fadeOut(750);								// Fadeout title, if any
-			this.StartAudio(this.curTime);									// Start	
-			if (end == -1)	end=this.maxTime;								// Get real end *AFTER* audio start
-			var resetTime=start;											// Time to restart
-			start=this.curTime;												// Set to start
-			this.playerStart=new Date().getTime()							// Set start to now
-			this.playerTimer=setInterval(function() {						// Set timer
-				_this.curTime=start+(new Date().getTime()-_this.playerStart)/1000; // Get elapsed time from start
-				_this.Draw();												// Show screen
-				if (_this.curTime >= end+1) {								// If past end post roll
-					_this.curTime=resetTime;								// Set to reset point
-					_this.inPlay=false;										// Toggle state
-					_this.Play(0,0);										// Stop player
-					_this.Draw();											// Show screen
-					}
-				},42);														// Set timer ~24ps
-			$("#playBut").prop("src","img/pausebut.gif");					// Show pause but
-			}
-		else{																// If paused	
-			this.StartAudio(-1);											// Stop playing
-			clearInterval(this.playerTimer);								// Kill timer
-			$("#playBut").prop("src","img/playbut.gif");					// Show play but
-		}
-	}
-
-//////////////////////////////////////////////////////////////////////////////////////////////////
-// SOUND
-/////////////////////////////////////////////////////////////////////////////////////////////////
-
-	CPlayer.prototype.SoundSettings=function()						// SOUND SETTINGS DIALOG
-	{
-		var _this=this;														// Save context
-		var x=$("#playerDiv").position().left+$("#playerDiv").width()/2-166;// Center in screen
-		var y=$("#screenDiv").height()-220;									// Bottom of screen
-		var str="Audio rate<div id='rateSlider' style='float:right;width:150px'></div><br>";
-		str+="<div style='float:right;width:75px;border-left:1px solid #66cc66;margin-top:-1px;'>&nbsp;</div><br>";
-		str+="Audio pitch<div id='pitchSlider'style='float:right;width:150px'></div><br><br>";
-		str+="Voice<select id='voiceSel' class='pa-is' style='float:right'width:150px'><option>None</option><option>Use MP3 file</option><option>Default computer voice</option></select><br><br>";
-		str+="MP3 files<span  style='float:right'><input id='mp3Inp' type='text' class='pa-is' style='width:150px'>";
-		str+="&nbsp<img src='img/microphone.png' title='MP3 recorder' style='vertical-align:-5px' onclick='doc.RecordMP3()'><span>";
-		
-		DialogBox("Sound Settings",str,x,y,300, function() {				// Run dialog			
-			_this.pitch=$("#pitchSlider").slider("option", "value"); 		// Get pitch		
-			_this.audioRate=$("#rateSlider").slider("option","value");		// Get rate		
-			_this.voice=$("#voiceSel").prop("selectedIndex");				// Get voice
-			_this.mp3=$("#mp3Inp").val();									// Get MP3 file
-			_this.InitAudio();												// Init audio
-			script.Draw();													// Redraw script
-			_this.Draw();													// Redraw screen
-			if (_this.voice == 1) 		$("#activeVoice").text("MP3 file");			// Show voice used	
-			else if (_this.voice > 1) 	$("#activeVoice").text("Computer voice");	// Show voice used	
-			else 						$("#activeVoice").text("");					// Show voice used	
-			});
-		for (i=0;i<this.voices.length;++i)									// For each voice
-			$("#voiceSel").append("<option>"+this.voices[i].name+"</option>");	// Add to select
-		$("#mp3Inp").val(this.mp3);											// Set mp3
-		$("#voiceSel").prop("selectedIndex",_this.voice);					// Set current voice
-		$(this).val("Sound options");										// Set menu to default
-		$("#pitchSlider").slider({ value:_this.pitch, step:5, min:0, max:200 });		// Init as slider 0-200
-		$("#rateSlider").slider({ value:_this.audioRate, step:5, min:50, max:150 });	// Init as slider 50-150
-		}
-		
-	CPlayer.prototype.InitAudio=function()								// INIT AUDIO
-	{
-		this.audio=null;													// Assume no audio						
-		var _this=this;														// Save context
-		if ((this.voice == 1) && this.mp3)	{								// If an mp3 file
-			this.audio=new Audio();											// Init audio object
-			this.audio=new Audio(ConvertFromGoogleDrive(this.mp3));			// Load mp3 file
-			}
-		else if (this.voice > 1) {											// If text to speech
-			speechSynthesis.cancel();										// Kill queue
-			this.audio=new SpeechSynthesisUtterance();						// Init TTS
-			if (this.voice > 2)												// If not default voice
-				this.audio.voice=this.voices[this.voice-3];					// Set voice
-			this.audio.onboundary=function(e) {								// On word boundary
-				_this.drift=e.charIndex+_this.startCharPos-(_this.curTime/_this.speechRate)-2;	// Save drift
-				}
-			}
-		this.maxTime=$("#scriptTextDiv").text().length*.065/(this.audioRate/100);	// Set max time
-		$("#endTime").text(SecondsToTimecode(Math.round(this.maxTime)));	// End display
-	}
-
-	CPlayer.prototype.StartAudio=function(time)							// PLAY/PAUSE AUDIO
-	{
-		this.speechRate=.065;												// Default speechRate
-		if (!this.audio)													// No audio set up yet
-			return;															// Quit
-		this.drift=0;														// Assume no drift from charpos to TTS
-		var ar=this.audioRate/100;											// Speed
-		if (this.voice == 1) {												// If an mp3 file
-			if (time < 0)													// If stopping
-				this.audio.pause();											// Stop playing
-			else{															// If playing
-				this.speechRate=.065/ar;									// Adjust speechRate
-				this.audio.currentTime=this.curTime;						// Cue it up
-				this.audio.playbackRate=ar;									// Set speed from .5 to 1.5
-				if (this.audio.duration) {									// If a some duration
-					if (this.audio.duration != Infinity)					// Not infinity
-						this.speechRate=this.audio.duration/ar/$("#scriptTextDiv").text().length;	// Set speechRate to match mp3 file
-					this.maxTime=$("#scriptTextDiv").text().length*this.speechRate;		// Set max time
-					$("#endTime").text(SecondsToTimecode(Math.round(this.maxTime)));	// End display
-					this.audio.play();										// Start playing
-					}
-				else														// Not loaded yet
-					PopUp("MP3 file has not loaded yet",2000,"screenDiv");	// Popup
-				}
-			}
-		else{																// Text to speech
-			speechSynthesis.cancel();										// Kill TTS queue
-			if (time >= 0) {												// If playing
-				this.InitAudio();											// Init TTS
-				var pos=this.curTime/this.speechRate;						// Start of text
-				this.startCharPos=pos;										// Save start char pos
-				this.audio.text=$("#scriptTextDiv").text().substr(pos);		// Set text							
-				this.audio.rate=Math.max(.1,this.audioRate/100);			// Set rate 
-				this.audio.pitch=(this.pitch/100);							// Set pitch 0-2
-				if (ar > 1)			ar=1+(ar-1)*2;							// Scale 1-1.5 to 1-2
-				else if (ar < 1)	ar=1-(ar*1.6);							// Scale .5-1 to .25-1
-				this.audio.rate=ar;											// Set TTS audio rate .25 to 2
-				speechSynthesis.speak(this.audio);							// Start
-				this.maxTime=$("#scriptTextDiv").text().length*this.speechRate;		// Set max time
-				$("#endTime").text(SecondsToTimecode(Math.round(this.maxTime)));	// End display
-				}
-			}
-	}
-
-	CPlayer.prototype.GetVoiceList=function(time)						// SET VOICE LIST
-	{
-		var _this=this;														// Save context
-		this.voices=[];														// New array
-		voices=speechSynthesis.getVoices();									// Get voices
-		voices.forEach(function(voice,index) {								// For each voice
-			if (voice.lang == "en-US")										// Just look at English
-				_this.voices.push(voice);									// Add voice
-				});
-	}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////
-// SCRIPT
-/////////////////////////////////////////////////////////////////////////////////////////////////
-
-	function CScript()													// SCRIPT CONSTRUCTOR
-	{
-		this.pics=[];														// Alloc array									
-		this.charMap=[];														// Positions of periods in text
-		var _this=this;														// Save context
-
-		$("#scriptDiv").droppable({											// HANDLE DROPS TO BIN
-			accept: ".pa-pic", 												// Accept only pics from bin	  
-			drop: function(event,ui) {										// On drop
-				doc.Do();													// Save a do
-				$("#metaDiv").remove();										// Kill popup
-				var id=ui.draggable[0].id.substr(7);						// Get id
-				if (!player.inMove)											// If not in motion editor
-					player.curPic=_this.pics.length;						// This is current pic
-				var pos=$("#"+ui.draggable[0].id).offset().top;				// Get y pos of image
-				var pos=ui.offset.top+$("#scriptDiv").scrollTop();			// Get unscrolled pos
-				pos=_this.GetPosFromPic(pos);								// Get char pos
-				_this.AddPic(id,pos);										// Add to script
-				Sound("ding");												// Ding
-				_this.Draw();												// Show script
-				$("#scriptPic-"+(_this.pics.length-1)).trigger("click");	// Set as current
-				}
-			});
-		
-		$("#scriptTextDiv").on("focus",function() {							// ON SCRIPT FOCUS
-			var txt=$("#scriptTextDiv").html();								// Get script html
-			$("#scriptTextDiv").html(txt.replace(/<span.+">|<\/span>/g,""));// Remove spans
-			});
-
-		$("#scriptTextDiv").on("change keyup paste", function() {			// ON SCRIPT CHANGE
-			_this.ResizeImageArea();										// Equilibrate fields
-			player.maxTime=$("#scriptTextDiv").text().length*player.speechRate; // Set max time
-			$("#endTime").text(SecondsToTimecode(Math.round(player.maxTime)));// End display
-			});
-	}
-
-	CScript.prototype.ResizeImageArea=function() 						//	MATCH IMAGE AREA TO TEXT AREA
-	{
-		$("#scriptPixDiv").height($("#scriptTextDiv").height())				// Make the same
-		$("#scriptDivider").height($("#scriptTextDiv")[0].scrollHeight-24);	// Set divider
-	}
-
-	CScript.prototype.Draw=function() 									//	DRAW SCRIPT
-	{
-		var i,y,str="<br>Drag<br>pictures<br>here"
-		var _this=this;														// Save context
-		var cpl=$("#scriptTextDiv").width()/15;								// Characters/line
-		var offy=$("#scriptTextDiv").offset().top+24;						// Offset of title
-		offy+=$("#scriptDiv").scrollTop();									// Account for scroll
-		for (i=0;i<this.pics.length;++i) {									// For each pic
-			y=(this.pics[i].start/cpl*40)+offy;								// Calc y pos			
-			str+="<div id='scriptPic-"+i+"' class='pa-scriptPic' ";			// Container div 
-			str+="style='top:"+y+"px'>";									// Pos
-			str+="<img id='scriptImg-"+i+"' style='position:relative' ";	// Img
-			str+="src='"+bin.pics[this.pics[i].num].src+"' ";				// Get source from bin
-			str+="></div>"													// End div
-			}
-		$("#scriptPixDiv").html(str);										// Show pix
-		this.ResizeImageArea();												// Equilibrate fields
-		this.ResolvePicTimes();												// Make times a solid stream
-		
-		for (i=0;i<this.pics.length;++i) {									// For each pic
-			player.ScalePic(128,85,"#scriptImg-"+i,script.pics[i].pos[0]); 	// Scale to start pos
-			
-			$("#scriptPic-"+i).on("click", function(e) {					// On click
-				if (!player.inMove)	{										// If not in motion editor
-					id=e.target.id.substr(10);								// Get index into script pics
-					player.curPic=id;										// Set current pic
-					player.curTime=_this.pics[id].start*player.speechRate;	// Set start
-					player.Draw();											// Draw
-					_this.Highlight("#cc0000",_this.pics[id].start,_this.pics[id].dur);	// Highlight text					
-					$("[id^=scriptPic-]").css("border","2px solid #999");	// Kill borders
-					$(this).css("border","2px solid #cc0000");				// Add border
-					}
-				});	
-			
-			$("#scriptPic-"+i).draggable( {									// Allow drag
-				axis: "y",													// Constrain to y axis
-				start: function(event, ui) {								// If starting					
-					$("#metaDiv").remove();									// Kill meta popup, if any
-					if (!player.inMove)										// If not in motion editor
-						player.curPic=ui.helper[0].id.substr(10);			// Set curpic
-					},
-				drag: function(event, ui) {									// If stopped						
-					$("#metaDiv").remove();									// Kill metadata popup
-					var id=ui.helper[0].id.substr(10);						// Get id
-					var pos=_this.GetPosFromPic(ui.position.top);			// Calc char pos
-					_this.Highlight("#0000ff",pos,-1,true);					// Highlight position in text & inhibit scrolling						
-					},
-				stop: function(event, ui) {									// If stopped						
-					doc.Do();												// Save a do
-					if (ui.position.top < -75) {							// Off the top
-						_this.pics.splice(ui.helper[0].id.substr(10),1);	// Delete it
-						Sound("delete");									// Sound
-						if (!player.inMove)									// If not in motion editor
-							player.curPic=-1;								// No current pic
-						}
-					else{													// Normal move
-						var id=ui.helper[0].id.substr(10);					// Get id
-						var pos=_this.GetPosFromPic(ui.position.top);		// Calc char pos
-						if (pos > 0)										// In range										
-							_this.SetPicStartTime(id,pos);					// Set pic start time
-						_this.Draw;											// Redraw
-						$("#scriptPic-"+id).trigger("click");				// Set as current
-						}
-	
-				_this.Draw();												// Redraw
-				}	
-			});
-		}
-	}
-
-	CScript.prototype.SetPicStartTime=function(id, pos) 				//	SET PIC START TIME
-	{
-		if (id == 0) {														// First pic
-			var dest=Math.max(0,this.GetPicFromTime(pos*player.speechRate));	// Get pic we're over
-			if (dest && (pos > this.pics[dest].start)) {					// If moving down, flop
-				var t=$.parseJSON(JSON.stringify(this.pics[dest]));			// Clone [dest]
-				this.pics[dest]=$.parseJSON(JSON.stringify(this.pics[id]));	// Flop with clone
-				this.pics[id]=t;											// Copy back temp
-				this.pics[dest].start=t.start;								// Set time
-				}
-			pos=0;															// Force to top
-		}
-		this.pics[id].start=Math.round(pos);								// Set start
-	}
-
-	CScript.prototype.GetPosFromPic=function(pos) 						// GET CHAR POS FROM PIC HEIGHT
-	{
-		var cpl=$("#scriptTextDiv").width()/15;								// Characters/line
-		var offy=$("#scriptTextDiv").offset().top+24;						// Offset of title
-		offy+=$("#scriptDiv").scrollTop();									// Account for scroll
-		return (pos-offy)/40*cpl;											// Return char pos
-	}
-
-	CScript.prototype.AddPic=function(picNum, when) 					//	ADD PIC TO SCRIPT
-	{
-		var o={};															// Blank obj
-		var n=this.pics.length;												// Number of pics
-		o.num=picNum;														// Add bin index
-		o.pos=[[.5,.4,.75,1],[.5,.5,.5,1]];									// Positions
-		this.pics.push(o);													// Add to pics array
-		this.SetPicStartTime(n,when);										// Set pic start time
-		this.Draw();														// Redraw
-	}
-
-	CScript.prototype.ResolvePicTimes=function() 						// RESOLVE PIC TIMES
-	{
-		var i,pre;
-		var o=this.pics;													// Point at pics
-		o.sort(function(a,b) { return a.start-b.start });					// Sort by start
-		var last=o.length-1;												// Point at last pic
-		var e=$("#scriptTextDiv").text().length+2;							// End of script in chars
-		if (last < 0)														// No pics yet
-			return;															// Quit
-		o[0].start=0;														// First pic always starts at 0
-		for (i=1;i<=last;++i) {												// For each pic past 1st
-			pre=i-1;														// Point a previous pic														
-			o[pre].dur=Math.max(0,o[i].start-o[pre].start);					// Dur is delta from this to last
-			o[pre].end=o[pre].start+o[pre].dur;								// Calc end
-			}
-		o[last].dur=Math.max(0,e-o[last].start);							// Fill last pix to script end	
-		o[last].end=e;														// Set end
-	}
-
-	CScript.prototype.GetPicFromTime=function(now) 						//	GET CURRENT SCRIPT PICTURE
-	{
-		var o=this.pics;													// Point at pics
-		if (!player)														// If no player yet
-			return -1;														// Return no pic
-		now/=player.speechRate;												// Convert from time to char
-		for (i=0;i<o.length;++i) 											// For each pic
-			if ((now >= o[i].start) && (now < o[i].end))					// In this one
-				return i;													// Return index
-		return i-1;															// Last pic
-	}
-
-	CScript.prototype.Highlight=function(col, pos, width, noScroll) 	//	HIGHLIGHT SCRIPT TEXT
-	{
-		var underBar=false;
-		var cpl=$("#scriptTextDiv").width()/15;								// Characters/line
-		var txt=$("#scriptTextDiv").html();									// Get raw text
-		txt=txt.replace(/<span.+">|<\/span>/g,"");							// Remove
-		txt=txt.replace(/<br>/g,"~");										// Remove CRs
-		txt=txt.replace(/\&nbsp\;/g," ");									// Remove with real spaces
-		var n=txt.length;													// Length of text
-		if (width < 0) {													// Tracking pos, no pic
-			underBar=true;													// Use underbar
-			width*=-2;														// Double width
-			}
-		if (player.drift) 													// If a drift from time vs TTS
-			pos+=player.drift;												// Shift start
-		pos=Math.max(Math.round(pos),0);									// Cap at 0
-		width=Math.round(width);											// Round
-		if (pos >= n)														// Start is past script length
-			return;															// Quit
-		if (pos+width > n)													// If end id past length
-			width=(n-pos+1);												// Cap at end
-		var str=txt.substr(0,pos)+"<span style='";							// Add start
-		if (underBar)														// If narrow
-			str+="border-bottom: 4px solid ";								// Use underline
-		else																// If wide
-			str+="color: ";													// Color
-		str+=col+";'>"														// Finish span
-		str+=txt.substr(pos,width);											// Add highlight portion
-		str+="</span>"+txt.substr(pos+width)								// Close span and add rest of text
-		str=str.replace(/~/g,"<br>");										// Restore CRs
-		$("#scriptTextDiv").html(str);										// Set colored text in
-		if (noScroll)														// If dragging pic
-			return;															// Don't scroll
-		var y=pos/cpl*40;													// Scroll point
-		$("#scriptDiv").scrollTop(y-$("#scriptDiv").height()/2);			// Scroll text
-	}
-
-	CScript.prototype.SpeechToText=function() 							//	TALK TO SCRIPT
-	{
-		Sound("ding");														// Ding
-		var recognition=new webkitSpeechRecognition();						// Init SST API
-		recognition.start();												// Start
-		recognition.onresult=function(event) { 								// ON A PHRASE
-			var pos=getCaretPosition();										// Get character pos
-			var p=event.results[0][0].transcript;							// Get phrase
-			var txt=$("#scriptTextDiv").html();								// Get raw text
-			txt=txt.replace(/<span.+">|<\/span>/g,"");						// Remove
-			txt=txt.replace(/<br>/g,"~");									// Remove CRs
-			txt=txt.replace(/\&nbsp\;/g," ");								// Remove with real spaces
-			txt=txt.substr(0,pos)+" "+p+" "+txt.substr(pos);				// Insert phrase
-			txt=txt.replace(/~/g,"<br>");									// Restore CRs
-			$("#scriptTextDiv").html(txt);									// Set colored text in
-			Sound("ding");													// Ding
-			}
-	
-		function getCaretPosition() {										// FIND CHAR POS IN SCRIPT
-			var caretPos=0,sel, range;
-			var editableDiv=$("#scriptTextDiv")[0];
-			if (window.getSelection) {
-				sel=window.getSelection();
-				if (sel.rangeCount) {
-					range=sel.getRangeAt(0);
-					if (range.commonAncestorContainer.parentNode == editableDiv) 
-						caretPos = range.endOffset;
-					}
-				} 
-			else if (document.selection && document.selection.createRange) {
-				range = document.selection.createRange();
-				if (range.parentElement() == editableDiv) {
-					var tempEl = document.createElement("span");
-					editableDiv.insertBefore(tempEl, editableDiv.firstChild);
-					var tempRange = range.duplicate();
-					tempRange.moveToElementText(tempEl);
-					tempRange.setEndPoint("EndToEnd", range);
-					caretPos = tempRange.text.length;
-					}
-				}
-			return caretPos;
-			}
-	
-		}
-
-
-
-
-
-
-
-
-
-
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////
-// BIN
-/////////////////////////////////////////////////////////////////////////////////////////////////
-
-	function CBin()														// BIN CONSTRUCTOR
-	{
-		var str="<img style='padding-top:16px' src='img/shantilogo.png'>"; 
-		str+="<br><img  src='img/helpicon.gif'style='width:20px;margin:6px;margin-bottom:12px;cursor:pointer' onclick='bin.ShowHelp()'>"; 
-		str+="<div style='color:#888;font-size:11px;line-height:100%'> &copy; 2018 University<br>of Virginia</div>";
-		$("#binMenuDiv").html(str);											// Show menu
-		$("#binDiv").disableSelection();									// Inhibit selection
-		this.pics=[];														// Alloc pics array
-		this.Draw();														// Show bin
-
-		$("#binLeftBut").on("click", function() {							// Mobile scroll left
-			$("#metaDiv").remove();											// Kill popup
-			$("#binPixDiv").scrollLeft($("#binPixDiv").scrollLeft()-$("#binPixDiv").width()/2);
-			if ($("#binPixDiv").scrollLeft())								// If scrolled
-				$("#binLeftBut").show();									// Show
-			else															// At start
-				$("#binLeftBut").hide();									// Hide
-			if (Math.abs($('#binPixDiv')[0].scrollWidth-$('#binPixDiv').outerWidth()) > 5)	// If it can scroll
-				$("#binRightBut").show();									// Show
-			});
-		
-		$("#binRightBut").on("click", function() {							// Right
-			$("#metaDiv").remove();											// Kill popup
-			$("#binPixDiv").scrollLeft($("#binPixDiv").scrollLeft()+$("#binPixDiv").width()/2);
-			$("#binLeftBut").show();										// Show left
-			if ($('#binPixDiv')[0].scrollWidth-$('#binPixDiv').scrollLeft()-$('#binPixDiv').outerWidth() < 20)	// If no scroll left
-				$("#binRightBut").hide();									// Hide
-			else															// At start
-				$("#binRightBut").show();									// Show
-			});
-	}
-
-	CBin.prototype.Draw=function() 										//	DRAW BIN
-	{
-		var i,str="";
-		var _this=this;														// Save context
-		str+="<ul id='pixList' style='list-style-type:none;padding:0;margin:0'>"
-		for (i=0;i<this.pics.length;++i) {									// For each pic
-			str+="<li id='binPic-"+i+"' class='pa-pic'";					// List start
-			str+="><img src='"+this.pics[i].src+"' style='margin:0;height:112px'></li>"; // Add image
-			}
-
-		$("#binPixDiv").html(str+"</ul>");									// Add to div
-		$("#pixList").sortable({ 											// Make it sortable
-			sort: function(event, ui) {										// On pic drag
-				$("#metaDiv").remove();										// Kill meta popup, if any on sort
-                if ((ui.offset.left < -40) && (ui.offset.top > $(window).height()-100)) {   // In corner
-                    doc.Do();                                               // Save a do
-                    _this.pics.splice(ui.helper[0].id.substr(7),1);         // Delete it
-   					Sound("delete");                                        // Sound                           
-	               _this.Draw();                                          	// Redraw
-                	}
-				else if (ui.offset.left < 120) {							// In script pic area
-					var pos=ui.offset.top+$("#scriptDiv").scrollTop();		// Get unscrolled pos
-					pos=script.GetPosFromPic(pos);							// Calc char pos
-					script.Highlight("#0000ff",pos,-1,true);				// Highlight position in text & inhibit scrolling						
-					}
- 				}
-			});
-		$("#pixList").disableSelection();									// Imnhibit selection
-	
-		var _this=this;														// Save context
-		for (i=0;i<this.pics.length;++i) {									// For each pic
-			$("#binPic-"+i).on("click", function(e) {						// Add over handler
-				$("#pa-webpage").remove();									// Remove old image, if any
-				var id=e.currentTarget.id.substr(7);						// Get id
-				_this.ShowMetaData(id);										// Show metadata popup
-				});
-			}
-	}
-
-	CBin.prototype.ShowMetaData=function(num) 						//	SHOW METADATA POPUP
-	{
-		$("#metaDiv").remove();												// Kill old one
-		var o=this.pics[num];												// Point at pic
-		if (!o.title && !o.desc) 											// If nothing to show
-			return;															// Quit
-		var _this=this;														// Save context
-		var str="<div id='metaDiv' class='pa-meta'>";						// Add div
-		str+="<img id='zoomBut' src='img/zoomer.png' style='width:14px;cursor:pointer'>&nbsp&nbsp;";	// Zoomer button
-		if (o.title)														// If a title
-			str+="<b>"+o.title+"</b><br><br>";								// Add it
-		if (o.desc)															// If a description
-			str+=o.desc;													// Add it
-		if (o.link)															// If a link
-			str+=" Click <a href=\""+o.link+"\" target=\"_blank\">here</a> for more information.";  // Add it
-		str+="<div id='metaArrow' class='pa-arrow-down'></div>";			// Add div
-		$("body").append(str+"</div>");										// Add popup
-		var x=$("#binPic-"+num).offset().left-160+$("#binPic-"+num).width()/2;	// Center
-		var off=x;															// Save pos
-		x=Math.min(x,$(window).width()-360);								// Cap to window
-		off-=x;																// Offset from end
-		$("#metaArrow").css("left",Math.min(160+off,320)+"px");				// Position arrow
-		var y=$("#binDiv").offset().top-$("#metaDiv").height()-32;			// Align by bottom
-		$("#metaDiv").offset({left:x,top:y});								// Position popup
-	
-		$("#scriptDiv").on("mouseenter", function() {						// Add over handler
-			$("#metaDiv").remove();											// Kill old one
-			});
-		$("#playerDiv").on("mouseenter", function() {						// Add over handler
-			$("#metaDiv").remove();											// Kill old one
-			});
-		$("#scriptDiv").on("click", function() {							// Add click handler
-			$("#pa-webpage").remove();										// Remove old image, if any
-			});
-		$("#playerDiv").on("click", function() {							// Add click handler
-			$("#pa-webpage").remove();										// Remove old image, if any
-			});
-
-		$("#zoomBut").on("click", function() {								// Show image popup
-			_this.ShowPic(num);												// Show popup		
-		});
-	}
-		
-	CBin.prototype.AddPic=function()									// ADD NEW PICTURE DIALOG
-	{
-		var _this=this;														// Save context
-		var x=$("#mainDiv").width()/2-266;									// Center in main screen
-		var y=$("#scriptDiv").height()/2-100;								// Center
-		var str="<div style='display:inline-block'><table style='width:300px'>";	// Info div/table
-		str+="<tr><td>Title</td><td><input id='addTitle' type='text' class='pa-is' style='width:100%'</td></tr>";
-		str+="<tr><td>URL</td><td><input id='addUrl' type='text' class='pa-is' style='width:100%'></td></tr>";
-		str+="<tr><td>Desc&nbsp;&nbsp;</td><td><textarea id='addDesc' type='text' class='pa-is' style='width:100%;height:50px'></textarea></td></tr>";
-		str+="<tr><td>Link</td><td><input id='addLink' type='text' class='pa-is' style='width:100%'>";
-		str+="</table></div>";														// End div
-		str+="<div style='display:inline-block;overflow:hidden;width:160px;margin-left:32px;vertical-align:top'>";
-		str+="<img id='addImg' src='img/newbinpic.png' style='width:100%'></div>";
-		str+="<div id='findPic' class='pa-greenbs'>Find picture</div>";	
-		DialogBox("Add new picture",str,x,y,500, function() {				// Run dialog			
-			var o={};
-			doc.Do();														// Save a do
-			o.src=$("#addUrl").val() ? ConvertFromGoogleDrive($("#addUrl").val()) : "";	 // Add src
-			o.title=$("#addTitle").val() ? $("#addTitle").val() : "";		// Add title
-			o.desc=$("#addDesc").val() ? $("#addDesc").val() : "";			// Add desc
-			o.link=$("#addLink").val() ? $("#addLink").val() : "";			// Add link
-			_this.pics.push(o);												// Add to bin
-			Sound("ding");													// Ding
-			_this.Draw();													// Redraw bin
-			});
-
-		$("#addUrl").on("change", function() {								// ON IMAGE URL SET
-			$("#addImg").prop("src",$(this).val());							// Show it
-			});
-		
-		$("#findPic").on("click", function() {								// ON FIND CLICK
-			$("#findPic").remove();											// Remove button
-			$("#dialogDiv").append("<br>");									// Shift down
-			$("#dialogDiv").width(900);										// Widen
-			$("#dialogDiv").draggable();									// Draggable
-			picFind.ImportDialog() 											// Show pix finder
-			});
-	}
-
-	CBin.prototype.ShowPic=function(num) 								//	SHOW PIC
-	{
-		$("#pa-webpage").remove();											// Remove old image, if any
-		$("#metaDiv").remove();												// Kill metadata
-		var o=this.pics[num];												// Point at pic
-		var str="<div id='pa-webpage' class='pa-webpage' style='";			// Add div
-		str+="width:"+($("#scriptDiv").width()-24);							// Width
-		str+="px;height:"+($("#scriptDiv").height()-44);					// Height
-		str+="px;top:8px;left:8px'>";										// Finish div
-		str+="<b>"+o.title+"</b><img id='pa-close' src='img/closedot.gif' style='float:right;cursor:pointer'><br><br>"	// Add close button
-		str+="<div style='overflow-y:auto;height:calc(100% - 30px)'><img src='"+o.src+"' width='100%'>";	
-		if (o.desc)	{														// If a description
-			str+="<br><br>"+o.desc;												// Add it
-			if (o.link)														// If a link
-				str+=" Click <a href=\""+o.link+"\" target=\"_blank\">here</a> for more information.";  // Add it
-			}
-		$("body").append("</div>"+str+"</div>");							// Add popup
-		$("#pa-webpage").fadeIn(1000);										// Fade in
-		$("#pa-close").click(function() { $("#pa-webpage").remove(); });	// Remove on click of close but
-	}
-
-	CBin.prototype.ShowHelp=function() 									//	SHOW HELP
-	{
-		var div="#mainDiv";													// Enclosing div	
-		$("#pa-webpage").remove();											// Remove old image, if any
-		$("#metaDiv").remove();												// Kill metadata
-		var h=$("#scriptDiv").height()-44;									// Height
-		var str="<div id='pa-webpage' class='pa-webpage' style='";			// Add div
-		str+="font-size:13px;width:"+(h*.77);								// Width proportion to 8.x x 11 page
-		str+="px;height:"+h+"px;top:8px;left:8px'>";						// Finish div
-		str+="<b> PrimaryAccess User&apos;s Guide</b><img id='pa-close' src='img/closedot.gif' style='float:right;cursor:pointer;padding-bottom:12px'><br>"	// Add close button
-//		str+="<div style='-webkit-overflow-scrolling:touch'>";
-		str+="<iframe src='https://docs.google.com/document/d/e/2PACX-1vQQlE8nxS33bkI5CY--daR1ibM-7q6B-GFrztW6cq9lN6FNztpA_b0nrQiV33krohd5O6dvyU1ibiGU/pub?embedded=true' "; 
-		str+="style='width:100%;height:"+(h-30)+"px;overflow-y:scroll'></iframe>";
-		$("body").append(str+"</div>");										// Add popup
-		$("#pa-webpage").fadeIn(1000);										// Fade in
-		$("#pa-webpage").draggable();										// Make it draggable
-		$("#pa-close").click(function() { $("#pa-webpage").remove(); });	// Remove on click of close but
-	}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // DOC
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	function CDoc()															// CONSTRUCTOR
-	{
-		this.curUndo=0;															// Undo counter
-		this.changed=false;														// Changed flag
-		this.undos=[];															// Holds undos
-		this.lastScriptLength=0;												// Script length
-		this.maxUndos=20;														// Max undos stored
-		this.assigned="";														// Not assigned
-		this.allowNewPics=1;													// Don't inhibit pic loading
-	}
+	class CDoc {
 
-	CDoc.prototype.DecodeKey=function(key)									// DECODE KEY INTO ID & SET PIC ADD MODE
-	{
-		if (!key)								return null;					// No key
-		var id=""+key;															// Copy key as string
-		var nn=parseInt(id.charAt(0),16)&7;										// Get shift order
-		id=id.substr(3);														// Trim order and student
-		while (nn-- > 0) 														// For each shift
-			id=id.substr(1,5)+id.charAt(0);										// Shift-left
-		return(id-0);															// Return id as an int
+		constructor() 														// CONSTRUCTOR
+		{
+			let saveInterval=5;													// Save time interval
+			this.curUndo=0;														// Undo counter
+			this.changed=false;													// Changed flag
+			this.undos=[];														// Holds undos
+			this.lastScriptLength=0;											// Script length
+			this.maxUndos=20;													// Max undos stored
+			this.assigned="";													// Not assigned
+			this.allowNewPics=1;												// Don't inhibit pic loading
+			this.saveTimer=window.setInterval( ()=>{							// Start save timer
+				if (this.changed && (userId != "guest")) {						// If not a guest and things have changed
+					this.Save(); 												// Save to DB
+					$("#saveIndicatorDiv").text("Saved!");						// Saved!
+					$("#saveIndicatorDiv").fadeIn().delay(3000).fadeOut();		// Animate in and out
+					}		
+				},saveInterval*60000);											// Every n minutes
 		}
 
-	CDoc.prototype.Do=function() 											//	SAVE UNDO
-	{
-		this.changed=true;														// Set changed flag
-		this.undos[this.curUndo]=this.Serialize();								// Save JSON in undo array
-		this.curUndo=(this.curUndo+1)%this.maxUndos;							// Inc undo count
-	}
-
-	CDoc.prototype.Undo=function() 											//	LOAD UNDO
-	{
-		if (!this.curUndo) {													// If nothing to undo
-			Sound("delete");													// Delete sound
-			return;																// Quit
-			}
-		this.curUndo=Math.abs((this.curUndo-1)%this.maxUndos);					// Dec undo count
-		this.LoadJSON(this.undos[this.curUndo]);								// Load undo
-		Sound("ding");															// Ding
-		PopUp("Undid last action",1000);										// Popup
-		Draw();																	// Redraw project							
-	}
-
-	CDoc.prototype.Serialize=function() 									//	SERIALIZE PROJECT INTO JSON OBJECT
-	{
-		var o={}
-		var txt=$("#scriptTextDiv").html();										// Get script 
-		o.script=txt.replace(/<br>/g,"~");										// Remove CRs
-		o.script=o.script.replace(/\&nbsp\;/g,"");								// Remove NBs
-		$("#scriptTextDiv").html(o.script);										// Set script with html		
-		o.script=$("#scriptTextDiv").text();									// Get text only script 
-		$("#scriptTextDiv").html(txt);											// Restore orginal script		
-		o.title=$("#titleDiv").text();											// Get title text 
-		o.voice=player.voice;													// Get audio mode
-		o.audioRate=player.audioRate;											// Get rate multiplier
-		o.pitch=player.pitch;													// Get TTS pitch
-		o.mp3=player.mp3;														// Get audio file
-		o.lastSave=Math.floor(Date.now()/1000);									// Last save in ms > 1970
-		if (chat.msgs.length) 													// If any chat messages
-			o.chat=$.parseJSON(JSON.stringify(chat.msgs));						// Save them too
-		o.binPics=$.parseJSON(JSON.stringify(bin.pics));						// Clone bin pics
-		o.scriptPics=$.parseJSON(JSON.stringify(script.pics));					// Clone script pics
-		return o;																// Return object
+		Do() 																	//	SAVE UNDO
+		{
+			this.changed=true;													// Set changed flag
+			this.undos[this.curUndo]=this.Serialize();							// Save JSON in undo array
+			this.curUndo=(this.curUndo+1)%this.maxUndos;						// Inc undo count
 		}
 
-	CDoc.prototype.LoadJSON=function(json) 									//	LOAD JSON AND SET
-	{
-		var o=json;																// Point at data
-		if (o && o.qmfmsg && o.qmfmsg == "error") {								// Error loading
-			PopUp("<p style='color:#990000'><b>Couldn't load project!</b></p>",3000); // Popup warning
-			return;																// Quit
+		Undo() 																	//	LOAD UNDO
+		{
+			if (!this.curUndo) {												// If nothing to undo
+				Sound("delete");												// Delete sound
+				return;															// Quit
+				}
+			this.curUndo=Math.abs((this.curUndo-1)%this.maxUndos);				// Dec undo count
+			this.LoadJSON(this.undos[this.curUndo]);							// Load undo
+			Sound("ding");														// Ding
+			PopUp("Undid last action",1000);									// Popup
+			Draw();																// Redraw project							
+		}
+
+		Serialize() 														//	SERIALIZE PROJECT INTO JSON OBJECT
+		{
+			let o={}
+			let txt=$("#scriptTextDiv").html();									// Get script 
+			o.script=txt.replace(/<br>/g,"~");									// Remove CRs
+			o.script=o.script.replace(/\&nbsp\;/g,"");							// Remove NBs
+			$("#scriptTextDiv").html(o.script);									// Set script with html		
+			o.script=$("#scriptTextDiv").text();								// Get text only script 
+			$("#scriptTextDiv").html(txt);										// Restore orginal script		
+			o.title=$("#titleDiv").text();										// Get title text 
+			o.voice=player.voice;												// Get audio mode
+			o.audioRate=player.audioRate;										// Get rate multiplier
+			o.pitch=player.pitch;												// Get TTS pitch
+			o.mp3=player.mp3;													// Get audio file
+			o.lastSave=Math.floor(Date.now()/1000);								// Last save in ms > 1970
+			if (chat.msgs.length) 												// If any chat messages
+				o.chat=$.parseJSON(JSON.stringify(chat.msgs));					// Save them too
+			o.binPics=$.parseJSON(JSON.stringify(bin.pics));					// Clone bin pics
+			o.scriptPics=$.parseJSON(JSON.stringify(script.pics));				// Clone script pics
+			return o;															// Return object
 			}
-		if (json == "civil") 
-			o=$.parseJSON('{"script":"In the 1954 Brown v. Board of Education decision, segregated schools were declared unconstitutional. This landmark decision sparked the modern Civil Rights movement. Led by Martin Luther King Jr., blacks engaged in a series of nonviolent protests throughout the southern United States.","title":"Civil Rights","audioRate":100,"pitch":100,"voice":0,"mp3":"narration.mp3","binPics":[{"src":"Test.jpg","title":"Martin Luther King at Civil rights march","date":"1963","desc":"Martin Luther King delivers his &quot;I have a dream&quot; speech at the Lincoln Memorial","link":"//memory.loc.gov/ammem/aaohtml/exhibit/aopart9b.html#0913-0914"},{"src":"Test2.jpg","title":"Rosa Parks sitting on bus","date":"1955","desc":"Rosa Parks prompted outcry when she sat in the front of the bus.","link":"//teacher.scholastic.com/rosa"},{"src":"Test10.jpg","title":"Brown vs. Board of Education","date":"1954","desc":"George E.C. Hayes, Thurgood Marshall, and James Nabrit, congratulating each other, following Supreme Court decision declaring segregation unconstitutional.","link":"//memory.loc.gov/ammem/aaohtml/exhibit/aopart9b.html#09c"},{"src":"Test4.jpg","title":"The Little Rock Nine letter - Page 1","date":"1957","desc":"Letter from Daisy Bates to Roy Wilkins.","link":"//memory.loc.gov/ammem/aaohtml/exhibit/aopart9.html#0918"},{"src":"Test6.jpg","title":"Greensboro Lunch Counter Sit-in","date":"1960","desc":"Ronald Martin, Robert Patterson, and Mark Martin stage sit-down strike after being refused service at an F.W. Woolworth luncheon counter, Greensboro, NC.","link":"//memory.loc.gov/ammem/aaohtml/exhibit/aopart9b.html#0909"}],"scriptPics":[]}');
-		this.changed=false;														// No unsaved changes
-		$("#scriptTextDiv").text(o.script);										// Get script text 
-		o.script=o.script.replace(/~/g,"<br>");									// Replace CRs
-		$("#titleDiv").text(o.title ? o.title : "");							// Get title text 
-		player.voice=o.voice ? o.voice : 0;										// Get audio mode
-		player.audioRate=o.audioRate ? o.audioRate : 100;						// Get rate multiplier
-		player.pitch=o.pitch ? o.pitch : 100;									// Get TTS pitch
-		player.mp3=o.mp3 ? o.mp3 : "";											// Get audio file
-		if (o.chat)																// If any chat messages
-			chat.msgs=$.parseJSON(JSON.stringify(o.chat));						// Clone chat messages
-		bin.pics=$.parseJSON(JSON.stringify(o.binPics));						// Clone bin pics
-		script.pics=$.parseJSON(JSON.stringify(o.scriptPics));					// Clone script pics
-		ResizePanes();															// Redraw
-	}
+
+		LoadJSON(json) 														//	LOAD JSON AND SET
+		{
+			let o=json;															// Point at data
+			if (json == "civil") 
+				o=$.parseJSON('{"script":"In the 1954 Brown v. Board of Education decision, segregated schools were declared unconstitutional. This landmark decision sparked the modern Civil Rights movement. Led by Martin Luther King Jr., blacks engaged in a series of nonviolent protests throughout the southern United States.","title":"Civil Rights","audioRate":100,"pitch":100,"voice":0,"mp3":"narration.mp3","binPics":[{"src":"Test.jpg","title":"Martin Luther King at Civil rights march","date":"1963","desc":"Martin Luther King delivers his &quot;I have a dream&quot; speech at the Lincoln Memorial","link":"//memory.loc.gov/ammem/aaohtml/exhibit/aopart9b.html#0913-0914"},{"src":"Test2.jpg","title":"Rosa Parks sitting on bus","date":"1955","desc":"Rosa Parks prompted outcry when she sat in the front of the bus.","link":"//teacher.scholastic.com/rosa"},{"src":"Test10.jpg","title":"Brown vs. Board of Education","date":"1954","desc":"George E.C. Hayes, Thurgood Marshall, and James Nabrit, congratulating each other, following Supreme Court decision declaring segregation unconstitutional.","link":"//memory.loc.gov/ammem/aaohtml/exhibit/aopart9b.html#09c"},{"src":"Test4.jpg","title":"The Little Rock Nine letter - Page 1","date":"1957","desc":"Letter from Daisy Bates to Roy Wilkins.","link":"//memory.loc.gov/ammem/aaohtml/exhibit/aopart9.html#0918"},{"src":"Test6.jpg","title":"Greensboro Lunch Counter Sit-in","date":"1960","desc":"Ronald Martin, Robert Patterson, and Mark Martin stage sit-down strike after being refused service at an F.W. Woolworth luncheon counter, Greensboro, NC.","link":"//memory.loc.gov/ammem/aaohtml/exhibit/aopart9b.html#0909"}],"scriptPics":[]}');
+			this.changed=false;													// No unsaved changes
+			$("#scriptTextDiv").text(o.script);									// Get script text 
+			o.script=o.script.replace(/~/g,"<br>");								// Replace CRs
+			$("#titleDiv").text(o.title ? o.title : "");						// Get title text 
+			player.voice=o.voice ? o.voice : 0;									// Get audio mode
+			player.audioRate=o.audioRate ? o.audioRate : 100;					// Get rate multiplier
+			player.pitch=o.pitch ? o.pitch : 100;								// Get TTS pitch
+			player.mp3=o.mp3 ? o.mp3 : "";										// Get audio file
+			if (o.chat)															// If any chat messages
+				chat.msgs=$.parseJSON(JSON.stringify(o.chat));					// Clone chat messages
+			bin.pics=$.parseJSON(JSON.stringify(o.binPics));					// Clone bin pics
+			script.pics=$.parseJSON(JSON.stringify(o.scriptPics));				// Clone script pics
+			ResizePanes();														// Redraw
+		}
+		
+		GetLink() 															//	GET LINK TO SHOW
+		{
+			if (1) {													// No id 
+				Sound("delete");												// Delete sound
+				PopUp("You need to load a show<br>to get a link to it",2000,"screenDiv");	// Error
+				return;															// Quit
+				}
+			let str="<b>Link to your project&nbsp;&nbsp; </b><br><p>";			// Title
+//			str+="</p><p>www.viseyes.org/pa?"+qmf.curFile+"</p>";				// Get it
+			PopUp(str,-1);														// Show with close but
+		}
+
+		Save(csv) 															// SAVE SHOW
+		{
+				fetch(`http://localhost:8081?q=save&email=${userId}&password=${password}`,
+				{ method:"POST", "Content-Type":"application/json", body:JSON.stringify(this.Serialize())})
+					.then(res => res.text())									// Get as text
+					.then(text =>{												// Process																	
+						this.changed=false;										// No unsaved changes now
+						trace(text)		
+						})		
+		}
+
+		Load(csv) 																// SAVE SHOW
+		{
+			this.changed=false;														// No unsaved changes
+		}
+
+		RecordMP3() 															// RECORD MP3
+		{
+			$("#pa-webpage").remove();												// Remove old popup, if any
+			let x=$("#playBut").offset().left-140;									// Get left
+			let y=$("#playBut").offset().top+65;									// Top
+			let str="<div id='pa-webpage' class='pa-webpage' style='";				// Add div
+			str+="font-size:13px;width:300px;height:172px;top:"+y+"px;left:"+x+"px'>";	 // Finish div
+			str+="<b>MP3 Recorder</b><img id='pa-close' src='img/closedot.gif' style='float:right;cursor:pointer;padding-bottom:12px'><br>"	// Add close button
+			str+="<iframe src='record.htm' "; 
+			str+="style='overflow-y:none;border:none'></iframe>";
+			$("body").append(str+"</div>");											// Add popup
+			$("#pa-webpage").fadeIn(1000);											// Fade in
+			$("#pa-webpage").draggable();											// Make it draggable
+			$("#pa-close").click(function() { $("#pa-webpage").remove(); });		// Remove on click of close but
+		}
 	
-	CDoc.prototype.GetLink=function() 										//	GET TO SHOW
-	{
-		if (!qmf.curFile) {														// No id 
-			Sound("delete");													// Delete sound
-			PopUp("You need to load a show<br>to get a link to it",2000,"screenDiv");	// Error
-			return;																// Quit
-			}
-		var str="<b>Link to your project&nbsp;&nbsp; </b><br><p>";				// Title
-		str+="</p><p>www.viseyes.org/pa?"+qmf.curFile+"</p>";					// Get it
-		PopUp(str,-1);															// Show with close but
-	}
-
-	CDoc.prototype.Save=function(csv) 										// SAVE SHOW
-	{
-		this.changed=false;														// No unsaved changes
-		fetch(`http://localhost:8081?q=save&email=${userId}&password=${password}`,
-			{ method:"POST", "Content-Type":"application/json", body:JSON.stringify(this.Serialize())})
-				.then(res => res.text())									// Get as text
-				.then(text =>{												// Process																	
-					trace(text)		
-					})		
-				
-
-	}
-
-	CDoc.prototype.Load=function(csv) 										// SAVE SHOW
-	{
-		this.changed=false;														// No unsaved changes
-	}
-	
-	function LoadShow(data) 												// GET DATA FROM LOAD SHOW
-	{
-		if (getPicsFromShow) {													// Get pix from show
-			GetPaRes(data.binPics);												// Send data
-			getPicsFromShow=false;												// Reset flag
-			return;																// Quit
-			}
-		doc.LoadJSON(data);														// Load show
-		doc.allowNewPics=1;														// Assume we're allowing new pics
-		if (data.allow != undefined)	doc.allowNewPics=data.allow;			// Set pic allow
-		if (data.newId != undefined)	qmf.curFile=data.newId;					// If an id set, use it
-		curJson=JSON.stringify(data);											// Turn data inrto JSON
-		curJson.replace(/\\'/g,"'");											// Unescape '
-		curJson.replace(/\\"/g,'"');											// Unescape "
-		curJson.scriptPics=$.parseJSON(curJson);								// Re-objectify
-		Draw();																	// Redraw
-	}
-
-	CDoc.prototype.RecordMP3=function() 									// RECORD MP3
-	{
-		$("#pa-webpage").remove();												// Remove old popup, if any
-		var x=$("#playBut").offset().left-140;									// Get left
-		var y=$("#playBut").offset().top+65;									// Top
-		var str="<div id='pa-webpage' class='pa-webpage' style='";				// Add div
-		str+="font-size:13px;width:300px;height:172px;top:"+y+"px;left:"+x+"px'>";	 // Finish div
-		str+="<b>MP3 Recorder</b><img id='pa-close' src='img/closedot.gif' style='float:right;cursor:pointer;padding-bottom:12px'><br>"	// Add close button
-		str+="<iframe src='record.htm' "; 
-		str+="style='overflow-y:none;border:none'></iframe>";
-		$("body").append(str+"</div>");											// Add popup
-		$("#pa-webpage").fadeIn(1000);											// Fade in
-		$("#pa-webpage").draggable();											// Make it draggable
-		$("#pa-close").click(function() { $("#pa-webpage").remove(); });		// Remove on click of close but
-	}
-
-
-
+	} // CLASS CLOSURE
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // CHAT
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	function CChat()														// CONSTRUCTOR
-	{
-		this.lastChat=0;
-		this.msgs=[];														// { who : when : msg }
-		this.who=0;															// Who's talking 0=student, 1=teacher 
-	}
+	class CChat {
 
-	CChat.prototype.Open=function()											// OPEN CHAT WINDOW
-	{
-		var _this=this;															// Save context
-if (!this.msgs.length) {
-this.msgs[0]={ msg:"Hi there Johnny. How's your project coming along?", who:1, when: Date.now/1000 }
-this.msgs[1]={ msg: "Hi teach!", who:0, when: Date.now/1000 }
-this.msgs[2]={ msg: "Good job!", who:2, when: Date.now/1000 }
-}
 
-	$("#chatDiv").remove();													// Kill old one, if any
-		var str="<div id='chatDiv' class='pa-chat'>"; 							// Add div
-		str+="<span class='pa-bodyTitle'>Chat</span>";							// Title
-		str+="<img id='pu-close' src='img/closedot.gif' style='float:right;cursor:pointer'>";	// Add close button
-		str+="<div id='chatTxt' class='pa-chatTxt'></div>"; 					// Text window
-		str+="<input id='addChat' placeholder='Type message here' type='text' class='pa-is' style='width:calc(100% - 48px);border: 1px solid #27ae5fb2;border-radius:6px'>";	// Input			
-		str+="<img src='img/talk.png' style='float:right'>";					// Add icon
-		str+="</div>"; 															// Add div
-		$("body").append(str);													// Add popup to div or body
-		$("#pu-close").click(function() { $("#chatDiv").remove(); });			// Remove on click of close but
-		$("#chatDiv").draggable();												// Make it draggable
-		this.Update();															// Show messages
-		$("#chatDiv").fadeIn(500);												// Animate in 
+		constructor()															// CONSTRUCTOR
+		{
+			this.lastChat=0;
+			this.msgs=[];															// { who : when : msg }
+			this.who=0;																// Who's talking 0=student, 1=teacher 
+		}
 
-		$("#addChat").on("change", function() {									// ON ADD MESSAGE
-			var o={ who:_this.who, when: Date.now/1000, msg: $(this).val() };	// Make new message
-			$(this).val("");													// Clear
-			Sound("ding");														// Make sound
-			_this.msgs.push(o);													// Add to list
-			_this.Update();														// Show it
-		});
-}
+		Open()																	// OPEN CHAT WINDOW
+		{
+			let _this=this;															// Save context
+			if (!this.msgs.length) {
+				this.msgs[0]={ msg:"Hi there Johnny. How's your project coming along?", who:1, when: Date.now/1000 }
+				this.msgs[1]={ msg: "Hi teach!", who:0, when: Date.now/1000 }
+				this.msgs[2]={ msg: "Good job!", who:2, when: Date.now/1000 }
+				}
 
-	CChat.prototype.Update=function()										// UPDATE CHAT
-	{
-		var i,o,str="";
-		for (i=0;i<this.msgs.length;++i) {										// For each message
-			o=this.msgs[i];														// Point at message
-			str+="<div style='width:100%;text-align:"							// Enclosing div
-			str+=o.who ? 'left' : 'right';										// Side based on who's talking
-			str+="'><div class='pa-chatMsg";									// Start div
-			str+=o.who ? 'T' : 'S';												// Class based on who's talking
-			str+="'>"+o.msg+"</div><br>";										// Message
-			}
-		$("#chatTxt").html(str);												// Set it
-	}
+			$("#chatDiv").remove();													// Kill old one, if any
+			let str="<div id='chatDiv' class='pa-chat'>"; 							// Add div
+			str+="<span class='pa-bodyTitle'>Chat</span>";							// Title
+			str+="<img id='pu-close' src='img/closedot.gif' style='float:right;cursor:pointer'>";	// Add close button
+			str+="<div id='chatTxt' class='pa-chatTxt'></div>"; 					// Text window
+			str+="<input id='addChat' placeholder='Type message here' type='text' class='pa-is' style='width:calc(100% - 48px);border: 1px solid #27ae5fb2;border-radius:6px'>";	// Input			
+			str+="<img src='img/talk.png' style='float:right'>";					// Add icon
+			str+="</div>"; 															// Add div
+			$("body").append(str);													// Add popup to div or body
+			$("#pu-close").click(function() { $("#chatDiv").remove(); });			// Remove on click of close but
+			$("#chatDiv").draggable();												// Make it draggable
+			this.Update();															// Show messages
+			$("#chatDiv").fadeIn(500);												// Animate in 
+
+			$("#addChat").on("change", function() {									// ON ADD MESSAGE
+				var o={ who:_this.who, when: Date.now/1000, msg: $(this).val() };	// Make new message
+				$(this).val("");													// Clear
+				Sound("ding");														// Make sound
+				_this.msgs.push(o);													// Add to list
+				_this.Update();														// Show it
+			});
+		}
+
+		Update()																// UPDATE CHAT
+		{
+			let i,o,str="";
+			for (i=0;i<this.msgs.length;++i) {										// For each message
+				o=this.msgs[i];														// Point at message
+				str+="<div style='width:100%;text-align:"							// Enclosing div
+				str+=o.who ? 'left' : 'right';										// Side based on who's talking
+				str+="'><div class='pa-chatMsg";									// Start div
+				str+=o.who ? 'T' : 'S';												// Class based on who's talking
+				str+="'>"+o.msg+"</div><br>";										// Message
+				}
+			$("#chatTxt").html(str);												// Set it
+		}
+
+} // CLASS CLOSURE
 
 	function myTest()
 	{		
-		var key=EncodeKey(49,0,1);
-		trace(49,key)
-		trace(doc.DecodeKey(key))
-
-		function EncodeKey(id, student, teacher)								// ENCODE ID INTO KEY
-		{
-			var nn;
-			var key=""+id;														// Copy id as string
-			while ((""+key).length < 6) 	   	key="0"+key;					// At least 6 digits
-			while ((""+student).length < 2) 	student="0"+student;			// At least 2 digits
-			var ord=nn=Math.floor(Math.random()*5)+1;							// Get order strategy 1-5
-			if (teacher)														// If teacher
-				ord+=8;															// Turn on 4th bit
-			ord=(ord&0xf).toString(16);											// Keep only 4 bits and make hex
-			while (nn-- > 0) 													// For each shift
-				key=key.charAt(5)+key.substr(0,5);								// Shift-right
-			key=""+ord+student+key;												// Make into key
-			return key;															// Return key
-		}
-
 	}
 
 </script>
