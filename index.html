@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+.savre<!DOCTYPE html>
 <html>
 <head>
 	<meta charset="UTF-8" />
@@ -263,7 +263,7 @@
 	var noSplash=(window.location.host == "localhost") ? true : false;		// Splash screen inhibitor
 	var playAspect=.6667;													// Image aspect ratio
 	var userId="guest";														// Default user to guest
-	var password="";														// Passwrd
+	var password="";														// Password
 
 	$(document).ready(function() {								        // ON PAGE LOADED
 		isMobile=navigator.platform.match(/(ipad|iphone|ipod|android)/i) ? true : false; // Set mobile flag id ios
@@ -453,7 +453,7 @@
 
 		constructor() 														// CONSTRUCTOR
 		{
-			let saveInterval=5;													// Save time interval
+			let saveInterval=(window.location.host == "localhost") ? 1 : 5;		// Save time interval
 			this.curUndo=0;														// Undo counter
 			this.changed=false;													// Changed flag
 			this.undos=[];														// Holds undos
@@ -462,11 +462,11 @@
 			this.assigned="";													// Not assigned
 			this.allowNewPics=1;												// Don't inhibit pic loading
 			this.saveTimer=window.setInterval( ()=>{							// Start save timer
-				if (this.changed && (userId != "guest")) {						// If not a guest and things have changed
+				if (this.changed && ((userId != "guest" || (window.location.host == "localhost")))) {	// If not a guest and things have changed
 					this.Save(); 												// Save to DB
 					$("#saveIndicatorDiv").text("Saved!");						// Saved!
 					$("#saveIndicatorDiv").fadeIn().delay(3000).fadeOut();		// Animate in and out
-					}		
+				}		
 				},saveInterval*60000);											// Every n minutes
 		}
 
@@ -555,14 +555,14 @@
 						})		
 		}
 
-		Load(id) 																// SAVE SHOW
+		Load(id) 																// LOAD SHOW
 		{
 			this.changed=false;														// No unsaved changes
-			fetch(`http://localhost:8081?q=loadt&id=${id}`)
-					.then(res => res.json())										// Get as text
-					.then(data =>{													// Process
-						trace(data)																	
-						})
+			fetch(`http://localhost:8081?q=load&id=${id}`)							// Load show
+				.then(res => res.json())											// Get as text
+				.then(data =>{														// Process
+					this.LoadJSON($.parseJSON(data[0].data));						// Load show
+				})
 		}
 
 		GetProjects(all) 														// GET SHOWS

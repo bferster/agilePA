@@ -33,14 +33,14 @@
 				'Access-Control-Max-Age': 2592000 // 30 days
 				 };
 			res.writeHead(200, headers);													// Write headers
-			let e=(req.url.match(/email=(.*)&/));											// Get email
-			let pw=(req.url.match(/password=(.*)/));										// Get pw
+			let e=req.url.match(/email=(.*)&/);												// Get email
+			let pw=req.url.match(/password=(.*)/);											// Get pw
 			if (req.url.match(/q=login&/)) 													// LOGIN
 				LogIn(e[1], pw[1], "PALOGIN",(r)=>{ SendResponse(r, res) });				// Do login
 			else if (req.url.match(/q=list&/))												// LIST
 				List(e[1],"PA",(r)=>{ SendResponse(JSON.stringify(r), res); })				// Get from DB
-			else if (req.url.match(/q=load&/))												// LOAD
-				Load(e[1],"PA",(r)=>{ SendResponse(JSON.stringify(r), res); })				// Get from DB
+			else if (req.url.match(/q=load&id=/))											// LOAD
+				Load(req.url.match(/id=(.*)/)[1],(r)=>{ SendResponse(JSON.stringify(r), res); }) // Get from DB
 			else if (req.url.match(/q=save&/)) {											// SAVE
 				let body="";																// Hold body
 				req.on('data', function(data) {	body+=data;	});								// ON data
@@ -88,7 +88,7 @@
 	function SendResponse(msg, res)													// SEND RESPONSE
 	{
 		res.end(msg);																	// Send message
-		console.log(msg);																// Log
+		console.log(msg.substring(0,128));												// Log
 	}	
 
 	function LogIn(email, password, type, callback)										// LOGIN
@@ -132,7 +132,7 @@
 	{
 		try{
 			Open();																			// Open DB
-			db.all(`SELECT * FROM db WHERE id = '${id}''`, (err, row) => { 					// Query
+			db.all(`SELECT * FROM db WHERE id = '${id}'`, (err, row) => { 					// Query
 				if (err)	callback(err.message);											// Error
 				else 		callback(row);													// Registered
 				});
