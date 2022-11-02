@@ -112,7 +112,7 @@ CImageFind.prototype.ImportDialog=function()									// IMPORTER DIALOG
 					});												
 				}
 			else if (this.type == "Library of Congress") {							// LOC
-				$.ajax( { url: "https://www.loc.gov/photos?fo=json&c=300",
+					$.ajax( { url: "//loc.gov/pictures/search?fo=json&c=300",
 					jsonp: "callback", 	dataType: 'jsonp', 
 					data: { q: this.filter },
 					xhrFields: { withCredentials: true },
@@ -120,14 +120,12 @@ CImageFind.prototype.ImportDialog=function()									// IMPORTER DIALOG
 						var i,o,data=[];
 						for (i=0;i<res.results.length;++i) {						// For each result
 								p=res.results[i];									// Point a obj
-								if (!p.image_url)									// If no image
-									continue;										// Skip				
-								if (!p.image_url.length)							// If no image
+								if (!p.image || !p.image.full)						// If no image
 									continue;										// Skip				
 								o={desc:"", era:"", link:"", title:"No title",id:i};// Shell
-								o.src=p.image_url[Math.max(0,p.image_url.length-1)];// Get last
+								o.src=p.image.full;									// Get url
 								if (p.title)	o.title=p.title;					// Add title
-								if (p.url)		o.link=p.url;						// Add Link
+								if (p.links && p.links.item) o.link=p.links.item;	// Add Link
 								data.push(o);										// Add to data
 								}
 							GetPaRes(data);											// Add to viewer
