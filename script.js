@@ -366,7 +366,7 @@ class CScript {
 				this.Draw();													// Redraw bin
 				});
 
-			$("#addUrl").on("change", ()=> {									// ON IMAGE URL SET
+			$("#addUrl").on("change", function() {								// ON IMAGE URL SET
 				$("#addImg").prop("src",$(this).val());							// Show it
 				});
 			

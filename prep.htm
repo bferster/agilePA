@@ -10,7 +10,6 @@
 	<script src="lib/jquery.ui.touch-punch.min.js"></script>
 	<script src="helpers.js"></script>
 	<script src="images.js"></script>
-	<script src="qfile.js"></script>
 	<style type="text/css">
 		 body { 			font-family: Verdana,Geneva,sans-serif; font-size: 13px;  
 							padding: 0; margin: 0px;
@@ -134,12 +133,10 @@
 		if (!isMobile)														// Check for Android
 			isMobile=navigator.userAgent.match(/android/i) ? true : false; 	// Set mobile flag
 		var url=window.location.search.substring(1);					 	// Get query string
-		qmf=new QmediaFile("//viseyes.org/pa/",1);							// Alloc assignment file system
-		qmf2=new QmediaFile("//viseyes.org/pa/",2);							// Alloc class file system
-		roster=new CRoster();												// Alloc CRoster module
+			roster=new CRoster();												// Alloc CRoster module
 		projects=new CProject();											// Alloc CProject module
 		picFind=new CImageFind("bodyDiv");									// Alloc CImageFind module
-		
+	/*	
 		qmf.LogIn(function(ok) { 											// Login
 			if (ok)			roster.email=qmf.email;							// Set mail
 			if (!roster.email) {											// No email
@@ -154,7 +151,10 @@
 				}
 			Draw();															// Draw body
 			});					
-		
+	*/
+	
+	Draw();
+
 		$(window).on("keydown",function(e) {								// HANDLE KEYPRESS
 			if ((e.which == 84) && e.altKey && e.ctrlKey)					// TEST KEY
 				gTest();
@@ -209,8 +209,10 @@
 	{
 		var i,o;
 		var _this=this;														// Context
-		var title=qmf2.curFile ? " - "+qmf2.curFile : " - New";				// Show number
-		var x=$("#bodyDiv").offset().left+560;								// Left
+//		var title=qmf2.curFile ? " - "+qmf2.curFile : " - New";				// Show number
+		
+let title="New"
+var x=$("#bodyDiv").offset().left+560;								// Left
 		var str="<p class='pa-bodyTitle'>Edit class";						// Title
 		str+="<span class='pa-proTitle' id='classTitleTitle'>"+title+"</span>"; // Add show name
 		str+="<span style='float:right'>";
@@ -430,8 +432,9 @@
 	{
 		var i,o;
 		var _this=this;														// Context
-		var title=qmf.curFile ? " - "+qmf.curFile : " - New";				// Show number
-		var x=$("#bodyDiv").offset().left+560;								// Left
+//		var title=qmf.curFile ? " - "+qmf.curFile : " - New";				// Show number
+let title="New";	
+var x=$("#bodyDiv").offset().left+560;								// Left
 		var str="<p class='pa-bodyTitle'>Edit assignment";					// Title
 		str+="<span class='pa-proTitle' id='proTitleTitle'>"+title+"</span>"; // Add show name
 		str+="<span style='float:right'>";
