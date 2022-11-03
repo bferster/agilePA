@@ -14,8 +14,8 @@
 		 body { 			font-family: Verdana,Geneva,sans-serif; font-size: 13px;  
 							padding: 0; margin: 0px;
 							}
-		.pa-main {		 	height: 100vh; width: 1000px; min-height: 500px; overflow: auto;  
-							background-color:#fff; margin-left: auto; margin-right: auto;
+		.pa-main {		 	height: 100vh; width: 1000px; min-height: 500px; overflow: auto; opacity:0; 
+							background-color:#fff; margin-left:auto; margin-right:auto;
 							}
 		.pa-tabs { 			background-color:#fff;  font-size: 14px; margin: 16px 0 -1px 16px; cursor: pointer;
 							}
@@ -113,6 +113,7 @@
 		</div>
 	<div id="bodyDiv" class="pa-body"></div>
 	</div>
+	<div id="splashDiv" class="pa-splash" style="text-align:center;color:#ccc"><img src="img/palogo.gif"><br>Teacher<br>prep</div>
 
 <script>
 
@@ -133,27 +134,17 @@
 		if (!isMobile)														// Check for Android
 			isMobile=navigator.userAgent.match(/android/i) ? true : false; 	// Set mobile flag
 		var url=window.location.search.substring(1);					 	// Get query string
-			roster=new CRoster();												// Alloc CRoster module
+			roster=new CRoster();											// Alloc CRoster module
 		projects=new CProject();											// Alloc CProject module
 		picFind=new CImageFind("bodyDiv");									// Alloc CImageFind module
-	/*	
-		qmf.LogIn(function(ok) { 											// Login
-			if (ok)			roster.email=qmf.email;							// Set mail
-			if (!roster.email) {											// No email
-				qmf.LoadFile("xxx49");										// Load demo assignemnt
-				qmf2.LoadFile("xxx74");										// Load demo class
-				}
-			else{
-				if (GetCookie("lastAssign"))  								// If a last show loaded
-					qmf.LoadFile("xxx"+GetCookie("lastAssign"));			// Load it
-				if (GetCookie("lastClass"))  								// If a last class loaded
-					qmf2.LoadFile("xxx"+GetCookie("lastClass"));			// Load it
-				}
-			Draw();															// Draw body
-			});					
-	*/
-	
-	Draw();
+		$("#splashDiv").delay(noSplash?1:1000).animate({ opacity:0},noSplash?1:500, // Hide logo
+			function() {	 												// When done
+				LogIn((email)=> { 											// Login
+					Draw();													// Draw body
+					$("#mainDiv").animate({ opacity:1}, noSplash?500:2000,	// Show interface
+						()=> {	$("#splashDiv").remove(); });				// Remove splash screen
+					});					
+				});
 
 		$(window).on("keydown",function(e) {								// HANDLE KEYPRESS
 			if ((e.which == 84) && e.altKey && e.ctrlKey)					// TEST KEY
@@ -172,6 +163,45 @@
 			});
 	});
 	
+	function LogIn(callback)											// LOG IN
+	{
+		let content=`Please type your email and password below.<br><br>
+		<p style="color:#000;font-size:14px"><b>Email / ID: </b><input class='pa-is' type='text' id='email' style="margin:4px"><br">
+		<b>Password: </b><input class='pa-is' type='text' id='password'></p>`;
+		$("#dialogDiv").remove();											// Kill old one, if any
+		let str=`<div id="dialogDiv" class="pa-meta" style="width:400px;left:calc(50% - 200px);top:calc(50% - 180px);text-align:center">
+			<img src="img/palogo.gif"><br>${content}<br>			
+			<div id="okBut" class="pa-bs">LOG IN</div>				
+			<a style="color:black;font-size:10px;float:left" href="forgotpassword.htm" target="_blank">Forgot password?</a>`;
+		$("body").append(str+"</div>");										// Add popup
+
+		$("#okBut").on("click",  function() {								// CLICK ON OK
+			let e=$("#email").val();										// Get email
+			let p=$("#password").val();										// Get password
+			if (!e) {														// No email
+				Sound("delete");											// Delete sound
+				PopUp("Please type an email or user id");					// Alert
+				return;														// Quit
+				}		
+			if (!p) {														// No password
+				Sound("delete");											// Delete sound
+				PopUp("Please type your password");							// Alert
+				return;														// Quit
+				}		
+			fetch(`http://localhost:8081?q=login&email=${e}&password=${p}`)
+				.then(res => res.text())									// Get as text
+				.then(text =>{												// Process																	
+					if (text == "PASSWORD") {								// Bad password
+						Sound("delete");									// Delete sound
+						PopUp("Sorry, but that's not the right password");	// Alert
+						return;												// Quit
+						}		
+					if (callback)	callback(e,p);							// If an ok callback spec'd, run it
+					$("#dialogDiv").remove();								// Kill dialog
+					});	
+			});
+	}
+
 	function Draw()
 	{
 		$("[id$=TabDiv]").css({ "border-bottom":"1px solid #999","background-color":"#fff","color":"#666" });

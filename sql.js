@@ -95,7 +95,7 @@
 	{
 		try {
 			Open();																			// Open DB
-			db.all(`SELECT * FROM db WHERE email = '${email}' AND type = '${type}'`, (err, rows) => {	// Look for email
+			db.all(`SELECT * FROM db WHERE email = '${email}' AND type = '${type}' AND role = 'teacher'`, (err, rows) => {	// Look for email
 				if (err) console.error(err.message);										// An error
 				else{																		// Good query
 					if (!rows.length) {														// No emails matched, must be a new user

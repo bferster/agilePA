@@ -72,7 +72,7 @@ CImageFind.prototype.ImportDialog=function()									// IMPORTER DIALOG
 	{	
 		$("#useEra").hide();														// Hide era selector
 		if (this.type == "WikiMedia") {												// From  Wikimedia			
-			$.ajax( { url: "//commons.wikimedia.org/w/api.php",
+			$.ajax( { url: "https://commons.wikimedia.org/w/api.php",
 				jsonp: "callback", 	dataType: 'jsonp', 
 				data: { action: "query", list: "search", srsearch: "javascript",  format: "json",
 						gimlimit:300, redirects:1, generator:"images", prop:"imageinfo", iiprop:"url|mediatype",	
@@ -112,10 +112,8 @@ CImageFind.prototype.ImportDialog=function()									// IMPORTER DIALOG
 					});												
 				}
 			else if (this.type == "Library of Congress") {							// LOC
-					$.ajax( { url: "//loc.gov/pictures/search?fo=json&c=300",
-					jsonp: "callback", 	dataType: 'jsonp', 
-					data: { q: this.filter },
-					xhrFields: { withCredentials: true },
+				$.ajax( { url: "https://loc.gov/pictures/search?c=300&fo=json&q="+this.filter,   // https://www.loc.gov/pictures/api
+				dataType: 'jsonp',
 					success: function(res) {										// When loaded
 						var i,o,data=[];
 						for (i=0;i<res.results.length;++i) {						// For each result
@@ -137,7 +135,7 @@ CImageFind.prototype.ImportDialog=function()									// IMPORTER DIALOG
 					});
 				}
 			else if (this.type == "National Archives") {							// NARA
-				$.ajax( {   url: "//catalog.archives.gov/api/v1?resultTypes=item",
+				$.ajax( {   url: "https://catalog.archives.gov/api/v1?resultTypes=item",
 					data: { q: this.filter },
 					jsonp: "callback", 	dataType: 'json', 
 					success: function(res) {										// When loaded
