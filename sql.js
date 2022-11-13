@@ -73,7 +73,7 @@
 	{
 		db=new sqlite3.Database(dbPath, (err)=> {										// Open DB
 			if (err) console.error(err.message);										// If err
-			else	 console.log('Connected to the AgileTeacher database');				// Good open
+			//else	 console.log('Connected to the AgileTeacher database');				// Good open
 			});
 		}
 
@@ -81,7 +81,7 @@
 	{
 		db.close((err)=>{																// Close			
 			if (err)  console.error(err.message);										// If err
-			else	  console.log('Close the database connection.');					// Good close				
+			//else	  console.log('Close the database connection.');					// Good close				
 			});
 	}
 	
@@ -93,9 +93,10 @@
 
 	function LogIn(email, password, type, callback)										// LOGIN
 	{
+		let role="";
 		try {
 			Open();																			// Open DB
-			db.all(`SELECT * FROM db WHERE email = '${email}' AND type = '${type}' AND role = 'teacher'`, (err, rows) => {	// Look for email
+			db.all(`SELECT * FROM db WHERE email = '${email}' AND type = '${type}' AND role = '${role}'`, (err, rows) => {	// Look for email
 				if (err) console.error(err.message);										// An error
 				else{																		// Good query
 					if (!rows.length) {														// No emails matched, must be a new user
@@ -149,7 +150,7 @@
 					VALUES('${email}','${password}',datetime("now"),'${type}','${title}','${data}')`, 
 					function(err) {														// Insert
 						if (err)	callback(err.message);								// Error
-						else 		callback("OK");										// OK
+						else 		callback(""+this.lastID);							// Return row id
 				});
 			Close();																	// Close db
 			}

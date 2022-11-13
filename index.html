@@ -1,4 +1,4 @@
-.savre<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
 	<meta charset="UTF-8" />
@@ -279,20 +279,19 @@
 		player=new CPlayer();												// Alloc CPlayer module
 		picFind=new CImageFind("dialogDiv");								// Alloc CImageFind module
 		if (url) { 															// A doc set
-			if (url.length == 9) {											// An assignemnt key		
+			if (url.length == 9) {											// An assignment key		
 				if (parseInt(url.charAt(0),16)&8)							// If 4th bit set
 					chat.who=1;												// It's the teacher talking
 				doc.assigned=url;											// Save assigned id
 				$("#picOptions").append("<option>Chat</option>");			// Add chat option
-//				qmf.LoadFile("123"+url,false);								// Load and set id, padded
 				}
 			else{															// Numbered load
 				if (!url.match(/\*/)) 										// Full screen flag
 					isFullScreen=2;											// Starting full										
 				else
 					url=url.substr(0,url.length-1);							// Remove *
-//				qmf.LoadFile("123"+url,true);								// Load, but don't set id, padded
 				}
+			doc.Load(url);													// Load
 			}	
 		else																// No doc													
 			doc.LoadJSON("civil");											// Load demo
@@ -301,8 +300,9 @@
 				function() {	 											// When done
 					if (isFullScreen) 										// Full screen flag
 						player.SetFullScreen(2);							// Set it
-					LogIn((id, pw)=>{										// Log in
+					LogIn((id, pw, rowId)=>{								// Log in
 						userId=id; password=pw;								// Set id and pw
+					doc.curScript=rowId;									// Set project id
 						$("#mainDiv").animate({ opacity:1},noSplash?500:2000, // Show interface
 							()=> {	$("#splashDiv").remove();	});			// Remove splash screen
 						})	
@@ -353,6 +353,10 @@
 
 	function LogIn(callback)											// LOG IN
 	{
+		if (window.location.search.substring(1)) {					 		// If id spec'd
+			callback("guest","",doc.curScript);								// Show screen						
+			return;
+			}
 		let content=`Please type your email and password below. If this is the first time here, we will create an account for you.<br><br>
 		<p style="color:#000;font-size:14px"><b>Email / ID: </b><input class='pa-is' type='text' id='email' style="margin:4px"><br">
 		<b>Password: </b><input class='pa-is' type='text' id='password'></p>`;
@@ -365,7 +369,7 @@
 		$("body").append(str+"</div>");										// Add popup
 
 		$("#guest").on("click",  function() {								// CLICK ON GUEST LOGIN
-			if (callback)	callback("guest","");							// If an ok callback spec'd, return guest
+			if (callback)	callback("guest","",0);							// If an ok callback spec'd, return guest
 			$("#dialogDiv").remove();										// Kill dialog
 			});
 
@@ -390,7 +394,16 @@
 						PopUp("Sorry, but that's not the right password");	// Alert
 						return;												// Quit
 						}		
-					if (callback)	callback(e,p);							// If an ok callback spec'd, run it
+					fetch(`http://localhost:8081?q=list&email=${e}&password=${p}`)
+						.then(res => res.json())							// Get as text
+						.then(data =>{										// Process																	
+							data.sort((a,b)=> { return b.id-a.id });		// Sort by date
+							if (data.length) {								// If something there
+								doc.curScript=data[0].id-0;					// Set row id
+								doc.LoadJSON($.parseJSON(data[0].data));	// Load script
+								}
+							});						
+					if (callback)	callback(e,p,doc.curScript);			// If an ok callback spec'd, run it
 					$("#dialogDiv").remove();								// Kill dialog
 					});	
 			});
@@ -461,6 +474,7 @@
 			this.maxUndos=20;													// Max undos stored
 			this.assigned="";													// Not assigned
 			this.allowNewPics=1;												// Don't inhibit pic loading
+			this.curScript=0;													// Currently active script
 			this.saveTimer=window.setInterval( ()=>{							// Start save timer
 				if (this.changed && ((userId != "guest" || (window.location.host == "localhost")))) {	// If not a guest and things have changed
 					this.Save(); 												// Save to DB
@@ -534,13 +548,13 @@
 		
 		GetLink() 															//	GET LINK TO SHOW
 		{
-			if (1) {													// No id 
+			if (!doc.curScript) {												// No id 
 				Sound("delete");												// Delete sound
-				PopUp("You need to load a show<br>to get a link to it",2000,"screenDiv");	// Error
+				PopUp("You need to load a show<br>to Sget a link to it",2000,"screenDiv");	// Error
 				return;															// Quit
 				}
 			let str="<b>Link to your project&nbsp;&nbsp; </b><br><p>";			// Title
-//			str+="</p><p>www.viseyes.org/pa?"+qmf.curFile+"</p>";				// Get it
+			str+=`</p>${window.location.hostname}/pa?${doc.curScript}</p`;		// Get it
 			PopUp(str,-1);														// Show with close but
 		}
 
@@ -551,7 +565,7 @@
 					.then(res => res.text())									// Get as text
 					.then(text =>{												// Process																	
 						this.changed=false;										// No unsaved changes now
-						trace(text)		
+						doc.curScript=text-0;									// Get current row id
 						})		
 		}
 
@@ -561,6 +575,7 @@
 			fetch(`http://localhost:8081?q=load&id=${id}`)							// Load show
 				.then(res => res.json())											// Get as text
 				.then(data =>{														// Process
+					doc.curScript=id;												// Set current row id
 					this.LoadJSON($.parseJSON(data[0].data));						// Load show
 				})
 		}
