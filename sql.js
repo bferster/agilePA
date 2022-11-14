@@ -9,10 +9,9 @@
 //	npm install os
 //	npm install fs
 ///	open port:8081
-//	localhost: node sql.js
+//	local: node sql.js
 //	server: cd /opt/bitnami/wordpress/pa | forever stop sql.js | forever start sql.js 
 //	admin with sqlStudio.exe in c:/cc
-
 
 	const sqlite3 = require('sqlite3').verbose();
 	const os = require("os");	
@@ -22,7 +21,7 @@
 
 //SERVER ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-	const local=os.hostname().match(/^bill|desktop/i);									// Running on localhost?
+	const local=os.hostname().match(/^bill|desktop/i) ? true : false;					// Running on localhost?
 
 	const OnRequest = function (req, res) 												// REQUEST LOOP
 		{
@@ -35,6 +34,7 @@
 			res.writeHead(200, headers);													// Write headers
 			let e=req.url.match(/email=(.*)&/);												// Get email
 			let pw=req.url.match(/password=(.*)/);											// Get pw
+
 			if (req.url.match(/q=login&/)) 													// LOGIN
 				LogIn(e[1], pw[1], "PALOGIN",(r)=>{ SendResponse(r, res) });				// Do login
 			else if (req.url.match(/q=list&/))												// LIST
@@ -62,18 +62,18 @@
 		}
 	else server=http.createServer(OnRequest);											// Create an http server
 	server.listen(8081);																// Listen on port 8081
-	trace("SQL nodeJS Server running");
+	trace("SQL nodeJS Server running on "+os.hostname()+":"+server.address().port);		// Log server stats
 
 // SQL ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	var db;																				// Holds database
-	const dbPath=local ? "../agileSQL/agile.db" : "./db/agile.db";						// Set path
+	const dbPath=local ? "../agileSQL/agile.db" : "../db/agile.db";						// Set path
 
 	function Open()																	// OPEN DB
 	{
 		db=new sqlite3.Database(dbPath, (err)=> {										// Open DB
 			if (err) console.error(err.message);										// If err
-			//else	 console.log('Connected to the AgileTeacher database');				// Good open
+			else	 console.log('Connected to the AgileTeacher database');				// Good open
 			});
 		}
 

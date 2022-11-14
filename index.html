@@ -270,6 +270,12 @@
 		if (!isMobile)														// Check for Android
 			isMobile=navigator.userAgent.match(/android/i) ? true : false; 	// Set mobile flag
 		var url=window.location.search.substring(1);					 	// Get query string
+		
+/* on close		
+		if (this.changed && ((userId != "guest" || (window.location.host == "localhost")))) {	// If not a guest and things have changed
+			this.Save(); 												// Save to DB
+*/
+
 		$(window).resize(ResizePanes);                                     	// On window resizing
 		ResizePanes();														// Start up sizing
 		doc=new CDoc();														// Alloc CDoc module
@@ -386,7 +392,7 @@
 				PopUp("Please type your password");							// Alert
 				return;														// Quit
 				}		
-			fetch(`http://localhost:8081?q=login&email=${e}&password=${p}`)
+			fetch(`//${window.location.host}:8081?q=login&email=${e}&password=${p}`)
 				.then(res => res.text())									// Get as text
 				.then(text =>{												// Process																	
 					if (text == "PASSWORD") {								// Bad password
@@ -394,7 +400,7 @@
 						PopUp("Sorry, but that's not the right password");	// Alert
 						return;												// Quit
 						}		
-					fetch(`http://localhost:8081?q=list&email=${e}&password=${p}`)
+					fetch(`//${window.location.host}:8081?q=list&email=${e}&password=${p}`)
 						.then(res => res.json())							// Get as text
 						.then(data =>{										// Process																	
 							data.sort((a,b)=> { return b.id-a.id });		// Sort by date
@@ -560,7 +566,7 @@
 
 		Save(csv) 															// SAVE SHOW
 		{
-				fetch(`http://localhost:8081?q=save&email=${userId}&password=${password}`,
+				fetch(`//${window.location.host}:8081?q=save&email=${userId}&password=${password}`,
 				{ method:"POST", "Content-Type":"application/json", body:JSON.stringify(this.Serialize())})
 					.then(res => res.text())									// Get as text
 					.then(text =>{												// Process																	
@@ -572,7 +578,7 @@
 		Load(id) 																// LOAD SHOW
 		{
 			this.changed=false;														// No unsaved changes
-			fetch(`http://localhost:8081?q=load&id=${id}`)							// Load show
+			fetch(`//${window.location.host}:8081?q=load&id=${id}`)								// Load show
 				.then(res => res.json())											// Get as text
 				.then(data =>{														// Process
 					doc.curScript=id;												// Set current row id
@@ -585,7 +591,7 @@
 			let i,j;
 			let str="<option value=''></option>";									// Blank line
 			let days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];					// Days of the week
-			fetch(`http://localhost:8081?q=list&email=${userId}&password=${password}`)
+			fetch(`https://agileteacher.org:8081/?q=list&email=${userId}&password=${password}`)
 					.then(res => res.json())										// Get as text
 					.then(data =>{													// Process																	
 						data.sort((a,b)=> { return b.id-a.id });					// Sort by date
