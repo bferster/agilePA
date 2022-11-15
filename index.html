@@ -19,6 +19,9 @@
 							}
 		.pa-main {		 	width: 100vw; min-width: 768px; overflow: auto;  background-color:#eee; opacity: 0; 
 							}
+
+		.pa-alert {			position:absolute; top:30px; left:0; width:176px; text-align:center; color:#27ae60; display:none;
+							}
 		
 		/* SCRIPT --------------------------------------------------------------------------------------------------*/
 
@@ -27,8 +30,6 @@
 							}
 		.pa-titleEdit {		width: calc(100% - 206px); margin-left: 176px; margin-top: 20px; 
 		 					font-weight: bold; font-size: 30px;
-							}
-		.pa-saveIndicator { position: absolute; left:60px; top:30px; color:#27ae60; font-size:14px; display:none;
 							}
 		.pa-scriptPix {		display: inline-block; width: 126px; padding: 16px; height: 80%;
 							color: #999; text-align:center; cursor:url(img/moveud.cur),auto;
@@ -158,7 +159,6 @@
 <body>
 	<div id="mainDiv" class="pa-main">
 		<div id="scriptDiv">
-			<div id="saveIndicatorDiv" class="pa-saveIndicator"></div>
 			<div id="titleDiv" contenteditable="true" class="pa-titleEdit"></div>
 			<select id="loadBut" class="pa-load " title="Load project"><option value="">--------------------------------------------------------------------</option></select>
 			<div id="scriptPixDiv" class="pa-scriptPix"></div>	
@@ -209,6 +209,7 @@
 		</div>
 	</div>
 	<div id="splashDiv" class="pa-splash" style="text-align:center;color:#ccc"><img src="img/palogo.gif"><br>v3.01</div>
+	<div id="alertDiv" class="pa-alert"></div>
   <script>
 	  
 	function PlayTTS()
@@ -266,15 +267,14 @@
 	var password="";														// Password
 
 	$(document).ready(function() {								        // ON PAGE LOADED
+		window.onbeforeunload=() =>{ 										// ON CLOSE
+			if (doc.changed && ((userId != "guest" || (window.location.host == "localhost")))) 	// If not a guest and things have changed
+				doc.Save(); 								// Save to DB
+			};
+
 		isMobile=navigator.platform.match(/(ipad|iphone|ipod|android)/i) ? true : false; // Set mobile flag id ios
 		if (!isMobile)														// Check for Android
 			isMobile=navigator.userAgent.match(/android/i) ? true : false; 	// Set mobile flag
-		var url=window.location.search.substring(1);					 	// Get query string
-		
-/* on close		
-		if (this.changed && ((userId != "guest" || (window.location.host == "localhost")))) {	// If not a guest and things have changed
-			this.Save(); 												// Save to DB
-*/
 
 		$(window).resize(ResizePanes);                                     	// On window resizing
 		ResizePanes();														// Start up sizing
@@ -284,6 +284,7 @@
 		script=new CScript();												// Alloc CScript module
 		player=new CPlayer();												// Alloc CPlayer module
 		picFind=new CImageFind("dialogDiv");								// Alloc CImageFind module
+		let url=window.location.search.substring(1);					 	// Get query string
 		if (url) { 															// A doc set
 			if (url.length == 9) {											// An assignment key		
 				if (parseInt(url.charAt(0),16)&8)							// If 4th bit set
@@ -484,9 +485,7 @@
 			this.saveTimer=window.setInterval( ()=>{							// Start save timer
 				if (this.changed && ((userId != "guest" || (window.location.host == "localhost")))) {	// If not a guest and things have changed
 					this.Save(); 												// Save to DB
-					$("#saveIndicatorDiv").text("Saved!");						// Saved!
-					$("#saveIndicatorDiv").fadeIn().delay(3000).fadeOut();		// Animate in and out
-				}		
+					}		
 				},saveInterval*60000);											// Every n minutes
 		}
 
@@ -572,7 +571,9 @@
 					.then(text =>{												// Process																	
 						this.changed=false;										// No unsaved changes now
 						doc.curScript=text-0;									// Get current row id
-						})		
+						$("#alertDiv").text("Project saved!");					// Saved!
+						$("#alertDiv").fadeIn(500).delay(2000).fadeOut(500)		// Animate in and out		
+					})		
 		}
 
 		Load(id) 																// LOAD SHOW

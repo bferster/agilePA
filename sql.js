@@ -149,6 +149,7 @@
 			db.run(`INSERT INTO db (email, password, date, type, title, data) 
 					VALUES('${email}','${password}',datetime("now"),'${type}','${title}','${data}')`, 
 					function(err) {														// Insert
+						trace(email+" saved...");
 						if (err)	callback(err.message);								// Error
 						else 		callback(""+this.lastID);							// Return row id
 				});
