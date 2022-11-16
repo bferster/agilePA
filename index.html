@@ -393,7 +393,7 @@
 				PopUp("Please type your password");							// Alert
 				return;														// Quit
 				}		
-			fetch(`//${window.location.host}:8081?q=login&email=${e}&password=${p}`)
+			fetch(`//${window.location.host}:8081?q=login&type=PA&role=&email=${e}&password=${p}`)
 				.then(res => res.text())									// Get as text
 				.then(text =>{												// Process																	
 					if (text == "PASSWORD") {								// Bad password
@@ -401,7 +401,7 @@
 						PopUp("Sorry, but that's not the right password");	// Alert
 						return;												// Quit
 						}		
-					fetch(`//${window.location.host}:8081?q=list&email=${e}&password=${p}`)
+					fetch(`//${window.location.host}:8081?q=list&type=PA&email=${e}&password=${p}`)
 						.then(res => res.json())							// Get as text
 						.then(data =>{										// Process																	
 							data.sort((a,b)=> { return b.id-a.id });		// Sort by date
@@ -565,7 +565,7 @@
 
 		Save(csv) 															// SAVE SHOW
 		{
-				fetch(`//${window.location.host}:8081?q=save&email=${userId}&password=${password}`,
+				fetch(`//${window.location.host}:8081?q=save&type=PA&email=${userId}&password=${password}`,
 				{ method:"POST", "Content-Type":"application/json", body:JSON.stringify(this.Serialize())})
 					.then(res => res.text())									// Get as text
 					.then(text =>{												// Process																	
@@ -579,7 +579,7 @@
 		Load(id) 																// LOAD SHOW
 		{
 			this.changed=false;														// No unsaved changes
-			fetch(`//${window.location.host}:8081?q=load&id=${id}`)								// Load show
+			fetch(`//${window.location.host}:8081?q=load&type=PA&id=${id}`)			// Load show
 				.then(res => res.json())											// Get as text
 				.then(data =>{														// Process
 					doc.curScript=id;												// Set current row id
@@ -592,7 +592,7 @@
 			let i,j;
 			let str="<option value=''></option>";									// Blank line
 			let days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];					// Days of the week
-			fetch(`https://agileteacher.org:8081/?q=list&email=${userId}&password=${password}`)
+			fetch(`//${window.location.host}:8081/?q=list&type=PA&email=${userId}&password=${password}`)
 					.then(res => res.json())										// Get as text
 					.then(data =>{													// Process																	
 						data.sort((a,b)=> { return b.id-a.id });					// Sort by date
@@ -606,7 +606,7 @@
 							let h=d.getHours();										// Get hours
 							if (h > 12)	h-=12;										// 24 -> 12
 							if (data[i].title)  									// A valid title
-								str+=`<option value=${data[i].id}>${days[d.getDay()]} ${(""+h).padStart(2,0)}:${(""+d.getMinutes()).padStart(2,0)} &nbsp; ${data[i].title}</option>`;
+								str+=`<option value=${data[i].id}>${days[d.getDay()]} ${(""+h).padStart(2,0)}:${(""+d.getMinutes()).padStart(2,0)} &nbsp; ${data[i].title} (${data[i].id})</option>`;
 							}
 						$("#loadBut").empty()										// Remove options
 						$("#loadBut").append(str);									// Add options
