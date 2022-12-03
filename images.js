@@ -112,28 +112,37 @@ CImageFind.prototype.ImportDialog=function()									// IMPORTER DIALOG
 					});												
 				}
 			else if (this.type == "Library of Congress") {							// LOC
-				$.ajax( { url: "https://loc.gov/pictures/search?c=300&fo=json&q="+this.filter,   // https://www.loc.gov/pictures/api
-				dataType: 'jsonp',
-					success: function(res) {										// When loaded
-						var i,o,data=[];
+				let url="https://loc.gov/photos/?fo=json&q="+this.filter;		   // https://guides.loc.gov/digital-scholarship/accessing-digital-materials  https://www.loc.gov/pictures/api
+				$.ajax( { url:url })
+					.done((res)=> {				
+						let i,o,p,data=[];
 						for (i=0;i<res.results.length;++i) {						// For each result
-								p=res.results[i];									// Point a obj
-								if (!p.image || !p.image.full)						// If no image
-									continue;										// Skip				
-								o={desc:"", era:"", link:"", title:"No title",id:i};// Shell
-								o.src=p.image.full;									// Get url
-								if (p.title)	o.title=p.title;					// Add title
-								if (p.links && p.links.item) o.link=p.links.item;	// Add Link
-								data.push(o);										// Add to data
-								}
-							GetPaRes(data);											// Add to viewer
+							p=res.results[i];										// Point at result
+							if (!p.image_url)										// No image url
+								continue;											// Skip				
+							if (!p.image_url.length)								// No images
+								continue;											// Skip				
+							o={desc:"", era:"", link:"", title:"No title", id:i}; 	// Shell obj
+							o.src=p.image_url[p.image_url.length-1];				// Get last image url
+							if (p.title)		o.title=p.title;					// Add title
+							if (p.id)			o.link=p.id;						// Add Link
+							data.push(o);											// Add to data
+							}
+						GetPaRes(data);												// Add to viewer
+						})
+					.fail((msg)=> { console.log("ERROR",msg); });					// Failure message
+			}
+/*
+			
+.then(res =>{													// Process
 							},
 						error: function(res) {										// On error
-							trace(res)
+							trace("ERROR",res)
 							LoadingIcon();											// Hide loading icon
 							}
 					});
-				}
+	*/				
+
 			else if (this.type == "National Archives") {							// NARA
 				$.ajax( {   url: "https://catalog.archives.gov/api/v1?resultTypes=item",
 					data: { q: this.filter },
