@@ -296,7 +296,7 @@
 				if (!url.match(/\*/)) 										// Full screen flag
 					isFullScreen=2;											// Starting full										
 				else
-					url=url.substr(0,url.length-1);							// Remove *
+					url=url.substr(1,url.length-1);							// Remove *
 				}
 			doc.Load(url);													// Load
 			}	
@@ -547,7 +547,9 @@
 			if (o.chat)															// If any chat messages
 				chat.msgs=$.parseJSON(JSON.stringify(o.chat));					// Clone chat messages
 			bin.pics=$.parseJSON(JSON.stringify(o.binPics));					// Clone bin pics
-			script.pics=$.parseJSON(JSON.stringify(o.scriptPics));				// Clone script pics
+			if (o.allowNewPics != undefined) this.allowNewPics=o.allowNewPics;	// Reset if spec'd
+			if (o.scriptPics)													// If defined
+				script.pics=$.parseJSON(JSON.stringify(o.scriptPics));			// Clone script pics
 			ResizePanes();														// Redraw
 		}
 		

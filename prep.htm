@@ -66,6 +66,10 @@
 		.pa-meta {			position: absolute;  width: 320px; padding: 16px; border-radius: 8px; font-size: 14px;
 							background-color: #e8e8e8; border: 1px solid #999; box-shadow: -4px -4px 12px 2px #aaa;
 							}
+		.pa-load {			border-radius:10px; width:1px; padding:0 8px; border: 1px solid #999; 
+							cursor:pointer;	float:right; margin:-28px 8px 0 0; font-size:14px;					
+							padding-left: 8px; padding-right: 8px; padding-top: 1px;
+							}
 
 		/* MISC --------------------------------------------------------------------------------------------------*/
 	
@@ -124,8 +128,24 @@
 	var projects=null;														// Holds projects module
 	var pictures=null;														// Holds pictures module
 	var picFind=null;														// Hold pic search module
-	var curJson={};															// To save show
 	var getPicsFromShow=false;												// KLUGE!!!
+	var myEmail="";															// Teacher's email
+	var myPassword="8888";													// Teacher's password
+
+	var ncssEras=[ "",														// NCSS eras
+			"1. Three Worlds Meet (Beginnings - 1620)",
+			"2. Colonization & Settlement (1585-1763)",
+			"3. Revolution & the New Nation (1754-1820s)",
+			"4. Expansion and Reform (1801-1861)",
+			"5. Civil War & Reconstruction (1850-1877)",
+			"6. Development of Industrial US (1870-1900)",
+			"7. Emergence of Modern America (1890-1930)",
+			"8. The Great Depression & WW-II (1929-1945)",
+			"9. Postwar US (1945 to early 1970s)",
+			"10. Contemporary US (1968 to the present)",
+			"11. The World" 
+			];
+
 
 	$(document).ready(()=> {								   			    // ON PAGE LOADED
 		isMobile=navigator.platform.match(/(ipad|iphone|ipod|android)/i) ? true : false; // Set mobile flag id ios
@@ -139,12 +159,14 @@
 			()=>{	 														// When done
 				Draw();														// Draw body
 				if (!local)	
-					LogIn((email)=> { 										// Login
+					LogIn(()=> { 											// Login
 							$("#mainDiv").animate({ opacity:1}, local?500:2000,	// Show interface
 						()=> {	$("#splashDiv").remove(); });				// Remove splash screen
 						});
-				else								$("#mainDiv").animate({ opacity:1},0 )	// Show interface
-								// Draw screen						
+				else{														// If debug
+					myEmail="bferster@stagetools.com";						// Default to me
+					$("#mainDiv").animate({ opacity:1},0 )					// Show interface
+					}
 				});
 
 		$(window).on("keydown",(e)=> {										// HANDLE KEYPRESS
@@ -176,10 +198,10 @@
 			<a style="color:black;font-size:10px;float:left" href="forgotpassword.htm" target="_blank">Forgot password?</a>`;
 		$("body").append(str+"</div>");										// Add popup
 
-		$("#okBut").on("click", ()=> {								// CLICK ON OK
-			let e=$("#email").val();										// Get email
+		$("#okBut").on("click", ()=> {										// CLICK ON OK
+			myEmail=$("#email").val();										// Get email
 			let p=$("#password").val();										// Get password
-			if (!e) {														// No email
+			if (!myEmail) {													// No email
 				Sound("delete");											// Delete sound
 				PopUp("Please type your email");							// Alert
 				return;														// Quit
@@ -197,7 +219,7 @@
 						PopUp("Sorry, but that's not the right password");	// Alert
 						return;												// Quit
 						}		
-					if (callback)	callback(e,p);							// If an ok callback spec'd, run it
+					if (callback)	callback(myEmail,p);					// If an ok callback spec'd, run it
 					$("#dialogDiv").remove();								// Kill dialog
 					});	
 			});
@@ -246,7 +268,7 @@
 		projects.script=data.script;											// Get script
 		projects.title=data.title;												// Title
 		if (data.era != undefined)												// If era set
-			projects.era=projects.ncssEras[data.era];							// Era
+			projects.era=ncssEras[data.era];									// Era
 		projects.pics=data.binPics;												// Pics
 		projects.allow=data.allow ? 1 : 0;										// Allow
 		Draw();																	// Redraw
@@ -260,7 +282,6 @@
 
 		constructor() 														// CONSTRUCTOR
 		{
-			this.email="";														// Teacher's email
 			this.title="";														// Class title
 			this.assigns=[];													// List of assignments
 			this.roster=[];														// Roster
@@ -286,9 +307,9 @@ var x=$("#bodyDiv").offset().left+560;								// Left
 		$("#bodyDiv").html(str);
 		this.DrawClass();													// Fill in class
 
-		if (this.email) {													// If an email set
+		if (myEmail) {														// If an email set
 			$.ajax({ url: "//viseyes.org/pa/findshows.php",					// GET ASSIGNMENTS FROM DB
-					data: { email: this.email, ver:1 },						// Query
+					data: { email: myEmail, ver:1 },						// Query
 					success: (res)=> {										// When loaded
 					this.assigns=[];										// Start fresh
 					$("#classAssigns").empty();								// Clear select
@@ -327,20 +348,27 @@ var x=$("#bodyDiv").offset().left+560;								// Left
 			var opt=$("#classOptions").val();								// Current option
 			if (opt == "New") 												// New show
 				ConfirmBox(()=> {											// Confirm 
-					this.title="";	 this.roster=[]; 						// Defaults
+					this.title="";	 this.roster=[]; 	this.assigns=[];	// Defaults
 					this.Draw();											// Redraw
 					});
-			else if (opt == "Load")											// Load show
-				ConfirmBox(()=> { projects.Load();	});						// Confirm  and load
-			else if (opt == "Save")	{										// Save show
-				curJson={};													// Clear
-				curJson.title=this.title;									// Get title 
-				curJson.roster=$.parseJSON(JSON.stringify(this.roster)); 	// Clone roster
-				projects.Save();											// Save
-				}
-			$(this).val("Class options");									// Restore  pulldown
+			else if (opt == "Load")	ConfirmBox(()=> { this.Load(); });		// Confirm and load
+			else if (opt == "Save")	this.Save();							// Save show
+			$("#classOptions").val("Class options");						// Restore pulldown
 			});
 	}
+		
+	Save()																// SAVE CLASS
+	{
+		let o={ title:this.title, email:myEmail };							// Set data
+		o.roster=$.parseJSON(JSON.stringify(this.roster)); 					// Clone roster
+		o.assigns=$.parseJSON(JSON.stringify(this.roster)); 				// Clone assigns
+	}
+
+	Load()																// LOAD CLASS
+	{
+		this.Draw();													// Redraw
+	}
+
 
 	DrawClass() 														// UPDATE CLASS
 	{
@@ -455,26 +483,12 @@ var x=$("#bodyDiv").offset().left+560;								// Left
 		{
 			this.pics=[];														// Project pictures
 			this.era=0;	this.title="";	this.script=""; this.allow=1;			// Defaults
-			this.ncssEras=[ "",													// NCSS eras
-			"1. Three Worlds Meet (Beginnings - 1620)",
-			"2. Colonization & Settlement (1585-1763)",
-			"3. Revolution & the New Nation (1754-1820s)",
-			"4. Expansion and Reform (1801-1861)",
-			"5. Civil War & Reconstruction (1850-1877)",
-			"6. Development of Industrial US (1870-1900)",
-			"7. Emergence of Modern America (1890-1930)",
-			"8. The Great Depression & WW-II (1929-1945)",
-			"9. Postwar US (1945 to early 1970s)",
-			"10. Contemporary US (1968 to the present)",
-			"11. The World" 
-			];
-	}
+		}
 
 	Draw() 																// UPDATE
 	{
 		var i,o;
-
-let title="New";	
+		let title="";	
 var x=$("#bodyDiv").offset().left+560;								// Left
 		var str="<p class='pa-bodyTitle'>Edit assignment";					// Title
 		str+="<span class='pa-proTitle' id='proTitleTitle'>"+title+"</span>"; // Add show name
@@ -483,7 +497,7 @@ var x=$("#bodyDiv").offset().left+560;								// Left
 		str+="&nbsp;&nbsp;<img src='img/helpicon.gif' style='cursor:pointer;vertical-align:-5px' onclick='ShowHelp(\"assign\")'></span><hr></p>"; 
 		str+="<table style='display:inline-block;padding-bottom:8px'>";	
 		str+="<tr><td>Title</td><td><input id='proTitle' class='pa-is' value='"+this.title+"'></input></td>";
-		str+="<td>&nbsp;&nbsp;&nbsp;&nbsp;NCSS era:</td><td>"+MakeSelect("proEra",false,this.ncssEras,this.era)+"</td></tr>";
+		str+="<td>&nbsp;&nbsp;&nbsp;&nbsp;NCSS era:</td><td>"+MakeSelect("proEra",false,ncssEras,this.era)+"</td></tr>";
 		str+="<tr><td>Script</td><td><textarea id='proScript' class='pa-is' style='font-family:sans-serif;padding:5px 8px 0 8px;height:40px'>"+this.script+"</textarea></td></td>";
 		str+="<td style='vertical-align:top'>&nbsp;&nbsp;&nbsp;&nbsp;Allow&nbsp;new&nbsp;pics?&nbsp;&nbsp;</td><td style='vertical-align:top'><input type='checkbox' id='proAllow'"+(this.allow ? 'checked' : "")+"></input></td></tr>";
 		str+="<tr><td>Pictures&nbsp;&nbsp;</td><td colspan='3'><div style='display:inline-block;margin-top:4px' id='picsBin'></div></td></tr></table>";
@@ -547,18 +561,12 @@ var x=$("#bodyDiv").offset().left+560;								// Left
 					this.Draw();											// Redraw	
 					});
 			else if (opt == "Load")											// Load show
-				ConfirmBox(()=> { this.Load(); });							// Confirm and load
+				ConfirmBox(()=> { this.GetProjects(); });					// Confirm and load
 			else if (opt == "Save")	{										// Save show
-				curJson={};													// Clear
-				curJson.script=this.script;									// Get  script 
-				curJson.title=this.title;									// Get title 
-				for (var i=0;i<this.ncssEras.length;++i) {					// For each era
-					if (this.ncssEras[i] == this.era)						// Match				
-						curJson.era=i;										// Set era index
+				for (var i=0;i<ncssEras.length;++i) {						// For each era
+					if (ncssEras[i] == this.era)							// Match				
+						this.era=i;											// Set era index
 					}
-				curJson.binPics=$.parseJSON(JSON.stringify(this.pics)); 	// Clone pics
-				curJson.scriptPics=[];										// Empty
-				curJson.allow=this.allow;									// Allow
 				this.Save();												// Save
 				}
 			$("#proOptions").val("Assignment options");						// Restore  pulldown
@@ -586,8 +594,8 @@ var x=$("#bodyDiv").offset().left+560;								// Left
 		
 		function loadAssignments(q) {										// LOAD ASSIGNMENTS
 			$.ajax( { 	url: "//viseyes.org/pa/findshows.php",				// URL
-						data: { q:q, ver:1, email: this.email },			// Query
-						success: (res)=> {								// When loaded
+						data: { q:q, ver:1, email: myEmail },				// Query
+						success: (res)=> {									// When loaded
 							fillAssignmentTable(res);						// Fill table
 							}
 						});
@@ -653,7 +661,7 @@ var x=$("#bodyDiv").offset().left+560;								// Left
 		str+="<tr><td>Picture url<span style='color:#990000'> *</span></td><td><input id='addUrl' type='text' class='pa-is'></td></tr>";
 		str+="<tr><td>Description&nbsp;&nbsp;</td><td><textarea id='addDesc' type='text' class='pa-is' style='height:60px'></textarea></td></tr>";
 		str+="<tr><td>Link to website&nbsp;&nbsp;</td><td><input id='addLink' type='text' class='pa-is'>";
-		str+="<tr><td>NCSS era:</td><td>"+MakeSelect("addEra",false,this.ncssEras,this.era)+"</td></tr>";
+		str+="<tr><td>NCSS era:</td><td>"+MakeSelect("addEra",false,ncssEras,this.era)+"</td></tr>";
 		str+="</table></div>";												// End div
 		str+="<div style='display:inline-block;overflow:hidden;width:300px;max-height:165px;margin-left:32px;vertical-align:top'>";
 		str+="<img id='addImg' src='img/newpreppic.png' style='margin-bottom:8px;width:300px'></div>";
@@ -754,15 +762,62 @@ var x=$("#bodyDiv").offset().left+560;								// Left
 			 });	
 	}
 
-
-	Save()																// SAVE PROJECT
+	Save(callback) 														// SAVE PROJECT
 	{
-	}
+		let o={ allowNewPics:projects.allow, era:projects.era };			// Base object
+		o.email=myEmail;													// Set email
+		o.title=projects.title;												// Title
+		o.script=projects.script;											// Script
+		o.binPics=projects.pics;											// Pics
+		o.scriptPics=[]];													// No pics in script
+		fetch(`//${window.location.host}:8081?q=save&type=PAPRO&email=${myEmail}&password=${myPassword}`,
+		{ method:"POST", "Content-Type":"application/json", body:JSON.stringify(o)})
+			.then(res => res.text())										// Get as text
+			.then(text =>{													// Process																	
+				this.changed=false;											// No unsaved changes now
+				if (callback)	callback();									// Call cb, if spec'd
+				PopUp("Project saved!");									// Saved!
 
-	Load()																// LOAD PROJECT
+			})		
+		}
+
+		GetProjects(all) 														// GET SHOWS
+		{
+			let i,j;
+			let str="<option value=''></option>";									// Blank line
+			let days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];					// Days of the week
+			fetch(`//${window.location.host}:8081/?q=list&type=PAPRO&email=${myEmail}&password=${myPassword}`)
+					.then(res => res.json())										// Get as text
+					.then(data =>{													// Process																	
+						data.sort((a,b)=> { return b.id-a.id });					// Sort by date
+						if (!all) {													// Just the latest ones
+							for (i=0;i<data.length;++i) 							// For each file 
+								for (j=i+1;j<data.length;++j) 						// For each file after it
+									if (data[i].title == data[j].title)	data[j].title=""; // Remove it
+								}
+						for (i=0;i<data.length;++i) {								// For each file loaded
+							let d=new Date(data[i].date);							// Get date
+							let h=d.getHours();										// Get hours
+							if (h > 12)	h-=12;										// 24 -> 12
+							if (data[i].title)  									// A valid title
+								str+=`<option value=${data[i].id}>${days[d.getDay()]} ${(""+h).padStart(2,0)}:${(""+d.getMinutes()).padStart(2,0)} &nbsp; ${data[i].title} (${data[i].id})</option>`;
+							}
+	//					$("#proOptions").empty()									// Remove options
+	//					$("#proOptions").append(str);								// Add options
+	//					$("#proOptions").show();									// Resize
+					});		
+			}
+
+
+	Load(id) 															// LOAD PROJECT
 	{
-	}
-
+		this.changed=false;													// No unsaved changes
+		fetch(`//${window.location.host}:8081?q=load&type=PAPRO&id=${id}`)	// Load show
+			.then(res => res.json())										// Get as text
+			.then(data =>{													// Process
+				trace(data)
+				})
+		}
 
 } //CLASS CLOSURE	
 
