@@ -241,9 +241,9 @@ class CScript {
 		
 		constructor()														//  CONSTRUCTOR
 		{
-			var str="<img style='margin:20px 0 3px 0;width:110px' src='img/agilelogo.png'><br>"; 
-			str+="<img  src='img/helpicon.gif'style='width:16px;margin:6px;margin-bottom:12px;cursor:pointer' onclick='bin.ShowHelp()'>"; 
-			str+="<div style='color:#888;font-size:11px;line-height:100%'> &copy;2022 StageTools</div>";
+			var str="<img style='margin-top:8px;width:100px' src='img/agilelogo.png'><br>"; 
+//			str+="<img  src='img/helpicon.gif'style='width:16px;margin:6px;margin-bottom:12px;cursor:pointer' onclick='bin.ShowHelp()'>"; 
+			str+="<div style='color:#888;font-size:10px;line-height:100%'> &copy;2022 StageTools</div>";
 			$("#binMenuDiv").html(str);											// Show menu
 			$("#binDiv").disableSelection();									// Inhibit selection
 			this.pics=[];														// Alloc pics array
