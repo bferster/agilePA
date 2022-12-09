@@ -203,3 +203,21 @@ function ConfirmBox(callback, msg)												// CONFIRMATION BOX
 			Sound("delete");													// Delete sound
 		});
 }
+
+function SaveTextAsFile(file, contents)										// SAVE TEXT TO LOCAL FILE
+{
+	if (file.charAt(0) == "*") {												// If asking
+		GetTextBox("Type file name","", file.substr(1), (s)=>{ SaveTextAsFile(s, contents); });	// Ask for name
+		return;																	// Quit
+		}
+	var textFileAsBlob=new Blob([contents], {type:'text/plain'});
+	var downloadLink=document.createElement("a");
+	downloadLink.download=file;
+	downloadLink.innerHTML="Download File";
+	downloadLink.href=window.URL.createObjectURL(textFileAsBlob);
+	downloadLink.onclick=()=>{ downloadLink.remove(); };
+	downloadLink.style.display="none";
+	downloadLink.id="tdll";
+	document.body.appendChild(downloadLink);
+	downloadLink.click();
+}

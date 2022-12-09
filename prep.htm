@@ -8,6 +8,7 @@
 	<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
 	<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
 	<script src="lib/jquery.ui.touch-punch.min.js"></script>
+	<script src="lib/papaparse.min.js"></script>
 	<script src="helpers.js"></script>
 	<script src="images.js"></script>
 	<style type="text/css">
@@ -123,7 +124,7 @@
 
 	var isMobile=false;														// Is a mobile platform
 	var local=(window.location.host == "localhost") ? true : false;			// Splash screen inhibitor
-	var curTab="ros";														// Start tab
+	var curTab="pro";														// Start tab
 	var roster=null;														// Holds roster module
 	var projects=null;														// Holds projects module
 	var pictures=null;														// Holds pictures module
@@ -162,16 +163,18 @@
 					LogIn(()=> { 											// Login
 							$("#mainDiv").animate({ opacity:1}, local?500:2000,	// Show interface
 						()=> {	$("#splashDiv").remove(); });				// Remove splash screen
-						});
+						loadLatestProject();								// Load most recent project	
+					});
 				else{														// If debug
 					myEmail="bferster@stagetools.com";						// Default to me
 					$("#mainDiv").animate({ opacity:1},0 )					// Show interface
+					loadLatestProject();									// Load most recent project	
 					}
 				});
 
 		$(window).on("keydown",(e)=> {										// HANDLE KEYPRESS
-			if ((e.which == 84) && e.altKey && e.ctrlKey)					// TEST KEY
-				gTest();
+			if ((e.which == 57) && e.ctrlKey)					// TEST KEY (C/9)
+				projects.GetAll();
 			});
 
 		$("#rosTabDiv").on("click", ()=> {									// Roster tab click
@@ -184,7 +187,20 @@
 			curTab="pro";													// Set current tab to project
 			Draw();															// Draw
 			});
-	});
+
+		function loadLatestProject() {										// LOAD LATEST PROJECT
+			fetch(`//${window.location.host}:8081?q=list&type=PAPRO&email=${myEmail}`)
+						.then(res => res.json())							// Get as text
+						.then(data =>{										// Process																	
+							data.sort((a,b)=> { return b.id-a.id });		// Sort by date
+							if (data.length) {								// If something there
+								projects.Load(data[0].id-0);					// Load it
+								}
+						});	
+			}					
+	
+
+		});
 	
 	function LogIn(callback)											// LOG IN
 	{
@@ -211,7 +227,7 @@
 				PopUp("Please type your password");							// Alert
 				return;														// Quit
 				}		
-			fetch(`http://localhost:8081?q=login&email=${e}&password=${p}`)
+			fetch(`http://localhost:8081?q=login&email=${myEmail}&password=${p}`)
 				.then(res => res.text())									// Get as text
 				.then(text =>{												// Process																	
 					if (text == "PASSWORD") {								// Bad password
@@ -488,16 +504,15 @@ var x=$("#bodyDiv").offset().left+560;								// Left
 	Draw() 																// UPDATE
 	{
 		var i,o;
-		let title="";	
-var x=$("#bodyDiv").offset().left+560;								// Left
-		var str="<p class='pa-bodyTitle'>Edit assignment";					// Title
-		str+="<span class='pa-proTitle' id='proTitleTitle'>"+title+"</span>"; // Add show name
+		var x=$("#bodyDiv").offset().left+560;								// Left
+		var str="<p class='pa-bodyTitle'>Editing: ";						// Title
+		str+="<span style='color:#000'><i>"+projects.title+"</i></span>"; 	// Add show name
 		str+="<span style='float:right'>";
 		str+=MakeSelect("proOptions",false,["Assignment options","New","Load","Save"]);
 		str+="&nbsp;&nbsp;<img src='img/helpicon.gif' style='cursor:pointer;vertical-align:-5px' onclick='ShowHelp(\"assign\")'></span><hr></p>"; 
 		str+="<table style='display:inline-block;padding-bottom:8px'>";	
 		str+="<tr><td>Title</td><td><input id='proTitle' class='pa-is' value='"+this.title+"'></input></td>";
-		str+="<td>&nbsp;&nbsp;&nbsp;&nbsp;NCSS era:</td><td>"+MakeSelect("proEra",false,ncssEras,this.era)+"</td></tr>";
+		str+="<td>&nbsp;&nbsp;&nbsp;&nbsp;NCSS era:</td><td>"+MakeSelect("proEra",false,ncssEras,ncssEras[this.era])+"</td></tr>";
 		str+="<tr><td>Script</td><td><textarea id='proScript' class='pa-is' style='font-family:sans-serif;padding:5px 8px 0 8px;height:40px'>"+this.script+"</textarea></td></td>";
 		str+="<td style='vertical-align:top'>&nbsp;&nbsp;&nbsp;&nbsp;Allow&nbsp;new&nbsp;pics?&nbsp;&nbsp;</td><td style='vertical-align:top'><input type='checkbox' id='proAllow'"+(this.allow ? 'checked' : "")+"></input></td></tr>";
 		str+="<tr><td>Pictures&nbsp;&nbsp;</td><td colspan='3'><div style='display:inline-block;margin-top:4px' id='picsBin'></div></td></tr></table>";
@@ -560,8 +575,7 @@ var x=$("#bodyDiv").offset().left+560;								// Left
 					this.script=""; 	this.allow=1;	
 					this.Draw();											// Redraw	
 					});
-			else if (opt == "Load")											// Load show
-				ConfirmBox(()=> { this.GetProjects(); });					// Confirm and load
+			else if (opt == "Load")	 this.GetProjects(); 					// Get projects list
 			else if (opt == "Save")	{										// Save show
 				for (var i=0;i<ncssEras.length;++i) {						// For each era
 					if (ncssEras[i] == this.era)							// Match				
@@ -569,6 +583,11 @@ var x=$("#bodyDiv").offset().left+560;								// Left
 					}
 				this.Save();												// Save
 				}
+			else{ 															// From a load
+				$("#proOptions").empty();									// Clear options	
+				if (!isNaN(opt)) this.Load(opt);							// Load project
+				Draw();														// Redraw
+				}				
 			$("#proOptions").val("Assignment options");						// Restore  pulldown
 			});
 	}
@@ -673,10 +692,10 @@ var x=$("#bodyDiv").offset().left+560;								// Left
 
 		$("#addBut").on("click", ()=> {										// ON ADD
 			var o={}
-			o.src=$("#addUrl").val() ?  ConvertFromGoogleDrive($("#addUrl").val()) : ""; // Add src
-			o.title=$("#addTitle").val() ? $("#addTitle").val() : "";		// Add title
-			o.desc=$("#addDesc").val() ? $("#addDesc").val() : "";			// Add desc
-			o.link=$("#addLink").val() ? $("#addLink").val() : "";			// Add link
+			o.src=$("#addUrl").val() ?  ConvertFromGoogleDrive($("#addUrl").val().replace(/\"|\'/g,"")) : ""; // Add src
+			o.title=$("#addTitle").val() ? $("#addTitle").val().replace(/\"|\'/g,"") : "";		// Add title
+			o.desc=$("#addDesc").val() ? $("#addDesc").val().replace(/\"|\'/g,"") : "";			// Add desc
+			o.link=$("#addLink").val() ? $("#addLink").val().replace(/\"|\'/g,"") : "";			// Add link
 			o.era=$("#addEra").val();										// Add NCSS era
 			if (!o.title && !o.src) { PopUp("Needs a title and a url",2000,"bodyDiv"); return; }	// Needs title and url
 			if (!o.title) { PopUp("Needs a title",2000,"bodyDiv"); return; }// Needs title 
@@ -743,11 +762,12 @@ var x=$("#bodyDiv").offset().left+560;								// Left
 		if (o.desc)															// If a description
 			str+=o.desc;													// Add it
 		if (o.link)															// If a link
-			str+=" Click <a href=\""+o.link+"\" target=\"_blank\">here</a> for more information.";  // Add it
+			str+="<br>Click <a href=\""+o.link+"\" target=\"_blank\">here</a> for more information.";  // Add it
+		str+="<p><div id='killBut' class='pa-bs' style='width:auto'>Remove pic from project</div><p>";	// Kill button
 		str+="<div id='metaArrow' class='pa-arrow-down'></div>";			// Add div
-		$("body").append(str+"</div>");										// Add popup
+			$("body").append(str+"</div>");									// Add popup
 		var x=$("#binPic-"+num).offset().left-160+$("#binPic-"+num).width()/2;	// Center
-		var y=$("#binPic-"+num).offset().top-10;								// Top
+		var y=$("#binPic-"+num).offset().top-10;							// Top
 		y=y-$("#metaDiv").height()-32;										// Align by bottom
 		var off=x;															// Save pos
 		x=Math.min(x,$(window).width()-360);								// Cap to window
@@ -757,6 +777,13 @@ var x=$("#bodyDiv").offset().left+560;								// Left
 		$("#zoomBut").on("click", ()=> {									// Show image popup
 			this.ShowPic(o.src,o.title,o.desc,o.link);						// Show popup		
 			});
+		$("#killBut").on("click", ()=> {									// Remove image
+			ConfirmBox(()=> {												// Confirm 
+				this.pics.splice(num,1);									// Remove it
+				this.Draw();												// Refresh
+				});
+			});
+
 		$("#pa-close").click(()=> {											// Click of close but
 			 $("#metaDiv").remove(); 										// Remove  
 			 });	
@@ -765,11 +792,11 @@ var x=$("#bodyDiv").offset().left+560;								// Left
 	Save(callback) 														// SAVE PROJECT
 	{
 		let o={ allowNewPics:projects.allow, era:projects.era };			// Base object
-		o.email=myEmail;													// Set email
-		o.title=projects.title;												// Title
-		o.script=projects.script;											// Script
+		o.email=myEmail.replace(/\"|\'/g,"");								// Set email
+		o.title=projects.title.replace(/\"|\'/g,"");						// Title
+		o.script=projects.script.replace(/\"|\'/g,"");						// Script
 		o.binPics=projects.pics;											// Pics
-		o.scriptPics=[]];													// No pics in script
+		o.scriptPics=[];													// No pics in script
 		fetch(`//${window.location.host}:8081?q=save&type=PAPRO&email=${myEmail}&password=${myPassword}`,
 		{ method:"POST", "Content-Type":"application/json", body:JSON.stringify(o)})
 			.then(res => res.text())										// Get as text
@@ -781,33 +808,32 @@ var x=$("#bodyDiv").offset().left+560;								// Left
 			})		
 		}
 
-		GetProjects(all) 														// GET SHOWS
+		GetProjects(all) 												// GET SHOWS
 		{
 			let i,j;
-			let str="<option value=''></option>";									// Blank line
-			let days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];					// Days of the week
+			let str="<option>Choose project to load</option>";				// Blank line
+			let days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];			// Days of the week
 			fetch(`//${window.location.host}:8081/?q=list&type=PAPRO&email=${myEmail}&password=${myPassword}`)
-					.then(res => res.json())										// Get as text
-					.then(data =>{													// Process																	
-						data.sort((a,b)=> { return b.id-a.id });					// Sort by date
-						if (!all) {													// Just the latest ones
-							for (i=0;i<data.length;++i) 							// For each file 
-								for (j=i+1;j<data.length;++j) 						// For each file after it
+					.then(res => res.json())								// Get as text
+					.then(data =>{											// Process																	
+						data.sort((a,b)=> { return b.id-a.id });			// Sort by date
+						if (!all) {											// Just the latest ones
+							for (i=0;i<data.length;++i) 					// For each file 
+								for (j=i+1;j<data.length;++j) 				// For each file after it
 									if (data[i].title == data[j].title)	data[j].title=""; // Remove it
 								}
-						for (i=0;i<data.length;++i) {								// For each file loaded
-							let d=new Date(data[i].date);							// Get date
-							let h=d.getHours();										// Get hours
-							if (h > 12)	h-=12;										// 24 -> 12
-							if (data[i].title)  									// A valid title
+						for (i=0;i<data.length;++i) {						// For each file loaded
+							let d=new Date(data[i].date);					// Get date
+							let h=d.getHours();								// Get hours
+							if (h > 12)	h-=12;								// 24 -> 12
+							if (data[i].title)  							// A valid title
 								str+=`<option value=${data[i].id}>${days[d.getDay()]} ${(""+h).padStart(2,0)}:${(""+d.getMinutes()).padStart(2,0)} &nbsp; ${data[i].title} (${data[i].id})</option>`;
 							}
-	//					$("#proOptions").empty()									// Remove options
-	//					$("#proOptions").append(str);								// Add options
-	//					$("#proOptions").show();									// Resize
+						$("#proOptions").empty()							// Remove options
+						$("#proOptions").append(str+"<option>Cancel</option>");	// Add options
+						$("#proOptions").show();							// Resize
 					});		
 			}
-
 
 	Load(id) 															// LOAD PROJECT
 	{
@@ -815,9 +841,25 @@ var x=$("#bodyDiv").offset().left+560;								// Left
 		fetch(`//${window.location.host}:8081?q=load&type=PAPRO&id=${id}`)	// Load show
 			.then(res => res.json())										// Get as text
 			.then(data =>{													// Process
-				trace(data)
-				})
+				projects.title=data[0].title;								// Title
+				let o=JSON.parse(data[0].data);								// Point at parsed data
+				projects.script=o.script									// Script
+				projects.pics=o.binPics;									// Pics
+				projects.era=o.era;											// Era
+				this.Draw();												// Redraw
+			})
 		}
+
+	GetAll()															// SAVE PROJECTS AS CSV FILE
+	{
+		fetch(`//${window.location.host}:8081?q=loadall&a=b&type=PAPRO`)
+				.then(res => res.json())									// Get as text
+				.then(data =>{												// Process
+					let str=Papa.unparse(data,{ header:true, skipEmptyLines:true, });	// Make CSV using lib
+					SaveTextAsFile("PAPRODatabase.csv", str);				// Save to file
+				})	
+	}
+
 
 } //CLASS CLOSURE	
 

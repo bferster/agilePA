@@ -98,7 +98,7 @@ class CScript {
 				start: (event, ui)=> {										// If starting					
 					$("#metaDiv").remove();									// Kill meta popup, if any
 					if (!player.inMove)										// If not in motion editor
-						player.curPic=ui.helper[0].id.substr(10);			// Set curpic
+						player.curPic=ui.helper[0].id.substr(10);			// Set curpicmetadiv
 					},
 				drag: (event, ui)=> {										// If stopped						
 					$("#metaDiv").remove();									// Kill metadata popup
@@ -323,7 +323,7 @@ class CScript {
 			if (o.desc)															// If a description
 				str+=o.desc;													// Add it
 			if (o.link)															// If a link
-				str+=" Click <a href=\""+o.link+"\" target=\"_blank\">here</a> for more information.";  // Add it
+				str+="<p>Click <a href=\""+o.link+"\" target=\"_blank\">here</a> for more information.</p>";  // Add it
 			str+="<div id='metaArrow' class='pa-arrow-down'></div>";			// Add div
 			$("body").append(str+"</div>");										// Add popup
 			var x=$("#binPic-"+num).offset().left-160+$("#binPic-"+num).width()/2;	// Center
