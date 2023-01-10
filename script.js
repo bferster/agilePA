@@ -27,7 +27,7 @@ class CScript {
 				}
 			});
 		
-		$("#scriptTextDiv").on("focus",()=> {							// ON SCRIPT FOCUS
+		$("#scriptTextDiv").on("focus",()=> {								// ON SCRIPT FOCUS
 			var txt=$("#scriptTextDiv").html();								// Get script html
 			$("#scriptTextDiv").html(txt.replace(/<span.+">|<\/span>/g,""));// Remove spans
 			});

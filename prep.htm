@@ -52,11 +52,11 @@
 							}
 		.pa-gridItem:hover{ background-color: #dee7f1;
 							}
-		.pa-gridPic {		width: 100%; height: 100px; overflow: hidden; margin-bottom: 6px;
+		.pa-gridPic {		width:100%; height:100px; overflow:hidden; margin-bottom:6px; 
 							}
-		.pa-listItem {		height: 22px; cursor: pointer; background-color: #fff;
+		.pa-listItem {		cursor:pointer; background-color:#fff; list-style-type:none; padding:0 8px;
 							}
-		.pa-listItem:hover{ background-color: #dee7f1;
+		.pa-listItem:hover{ background-color:#dee7f1;
 							}
 		.pa-binItem {		color: #666; padding: 4px; border: 1px solid #47ae80; margin-right: 4px; margin-bottom: 4px; display: inline-block;
 							width: 112px; height: 75px; cursor: pointer; border-radius: 4px; overflow: hidden;
@@ -152,14 +152,14 @@
 		isMobile=navigator.platform.match(/(ipad|iphone|ipod|android)/i) ? true : false; // Set mobile flag id ios
 		if (!isMobile)														// Check for Android
 			isMobile=navigator.userAgent.match(/android/i) ? true : false; 	// Set mobile flag
-		var url=window.location.search.substring(1);					 	// Get query string
-			roster=new CRoster();											// Alloc CRoster module
+		let url=window.location.search.substring(1);					 	// Get query string
+		roster=new CRoster();												// Alloc CRoster module
 		projects=new CProject();											// Alloc CProject module
 		picFind=new CImageFind("bodyDiv");									// Alloc CImageFind module
 		$("#splashDiv").delay(local?1:1000).animate({ opacity:0},local?1:500, // Hide logo
 			()=>{	 														// When done
 				Draw();														// Draw body
-				if (!local)	
+				if (!local)														// Not in debug
 					LogIn(()=> { 											// Login
 							$("#mainDiv").animate({ opacity:1}, local?500:2000,	// Show interface
 						()=> {	$("#splashDiv").remove(); });				// Remove splash screen
@@ -188,18 +188,22 @@
 			Draw();															// Draw
 			});
 
-		function loadLatestProject() {										// LOAD LATEST PROJECT
+		function loadLatestProject() {										// LOAD LATEST OR NEW PROJECT
+			if (url.match(/add=/i)) {										// If a new project spec'd								
+				projects.Load(url.match(/add=(\d+)/i)[1]-0);				// Load new one
+				projects.curId=0;											// Not saved
+				return;														// Quit
+				}
 			fetch(`//${window.location.host}:8081?q=list&type=PAPRO&email=${myEmail}`)
 						.then(res => res.json())							// Get as text
 						.then(data =>{										// Process																	
 							data.sort((a,b)=> { return b.id-a.id });		// Sort by date
 							if (data.length) {								// If something there
-								projects.Load(data[0].id-0);					// Load it
+								projects.curId=data[0].id-0;				// Set id
+								projects.Load(projects.curId);				// Load it
 								}
 						});	
 			}					
-	
-
 		});
 	
 	function LogIn(callback)											// LOG IN
@@ -277,12 +281,11 @@
 			roster.roster=data.roster;											// Get roster
 			roster.title=data.title;											// Title
 			Draw();																// Redraw
-//			SetCookie("lastClass",qmf2.curFile,7);								// Set cookie for last class loaded
 			return;																// Quit
 			}
-//		SetCookie("lastAssign",qmf.curFile,7);									// Set cookie for last assign loaded
 		projects.script=data.script;											// Get script
 		projects.title=data.title;												// Title
+		projects.titleChanged=false;											// No title change
 		if (data.era != undefined)												// If era set
 			projects.era=ncssEras[data.era];									// Era
 		projects.pics=data.binPics;												// Pics
@@ -346,6 +349,7 @@ var x=$("#bodyDiv").offset().left+560;								// Left
 
 		$("#classTitle").on("change", ()=> {								// ON TITLE CHANGE
 			this.title=$("#classTitle").val();								// Set 
+			this.titleChanged=true;											// Changed the title
 			});
 			
 		$("#classAssigns").on("change", ()=> {								// ON ASSIGNMENT CHANGE
@@ -499,14 +503,17 @@ var x=$("#bodyDiv").offset().left+560;								// Left
 		{
 			this.pics=[];														// Project pictures
 			this.era=0;	this.title="";	this.script=""; this.allow=1;			// Defaults
-		}
+			this.curId=0;														// Current id
+			this.titleChanged=false;											// No title change yet
+	}
 
 	Draw() 																// UPDATE
 	{
-		var i,o;
-		var x=$("#bodyDiv").offset().left+560;								// Left
-		var str="<p class='pa-bodyTitle'>Editing: ";						// Title
-		str+="<span style='color:#000'><i>"+projects.title+"</i></span>"; 	// Add show name
+		let i,o;
+		let x=$("#bodyDiv").offset().left+560;								// Left
+		let str="<p class='pa-bodyTitle'>Editing: ";						// Title
+		str+="<span style='color:#000'>"+projects.title; 					// Add show name
+		if (projects.curId) str+=" (<i>#"+this.curId+")<i>";				// Add id
 		str+="<span style='float:right'>";
 		str+=MakeSelect("proOptions",false,["Assignment options","New","Load","Save"]);
 		str+="&nbsp;&nbsp;<img src='img/helpicon.gif' style='cursor:pointer;vertical-align:-5px' onclick='ShowHelp(\"assign\")'></span><hr></p>"; 
@@ -553,6 +560,7 @@ var x=$("#bodyDiv").offset().left+560;								// Left
 
 		$("#proTitle").on("change", ()=> {									// ON TITLE CHANGE
 			this.title=$("#proTitle").val();								// Set 
+			this.titleChanged=true;											// A title change
 			});
 		
 		$("#proScript").on("change keyup paste", ()=> {						// ON SCRIPT CHANGE
@@ -567,12 +575,14 @@ var x=$("#bodyDiv").offset().left+560;								// Left
 			this.allow=$("#proAllow").prop("checked") ? 1 : 0;				// Set
 			});
 		
-		$("#proOptions").on("change", ()=> {							// ON OPTIONS CHANGE
+		$("#proOptions").on("change", ()=> {								// ON OPTIONS CHANGE
 			var opt=$("#proOptions").val();									// Current option
 			if (opt == "New") 												// New show
 				ConfirmBox(()=> {											// Confirm 
-					this.pics=[];		this.era=0;		this.title="";		// Defaults
-					this.script=""; 	this.allow=1;	
+					this.pics=[];		this.era=0;		this.title="Untitled";		// Defaults
+					this.script=""; 	this.allow=1;	this.titleChanged=false;
+
+					this.curId=0;											// Not file loaded yer
 					this.Draw();											// Redraw	
 					});
 			else if (opt == "Load")	 this.GetProjects(); 					// Get projects list
@@ -583,11 +593,6 @@ var x=$("#bodyDiv").offset().left+560;								// Left
 					}
 				this.Save();												// Save
 				}
-			else{ 															// From a load
-				$("#proOptions").empty();									// Clear options	
-				if (!isNaN(opt)) this.Load(opt);							// Load project
-				Draw();														// Redraw
-				}				
 			$("#proOptions").val("Assignment options");						// Restore  pulldown
 			});
 	}
@@ -797,22 +802,31 @@ var x=$("#bodyDiv").offset().left+560;								// Left
 		o.script=projects.script.replace(/\"|\'/g,"");						// Script
 		o.binPics=projects.pics;											// Pics
 		o.scriptPics=[];													// No pics in script
-		fetch(`//${window.location.host}:8081?q=save&type=PAPRO&email=${myEmail}&password=${myPassword}`,
+		let op=this.titleChanged ? "save" : "update&id="+projects.curId;	// Save or update
+		if (!this.titleChanged) o={data:JSON.stringify(o), type:"PAPRO", role:"teacher", email:myEmail, password:myPassword, title:o.title };	
+
+		fetch(`//${window.location.host}:8081?q=${op}&type=PAPRO&role=teacher&email=${myEmail}&password=${myPassword}`,
 		{ method:"POST", "Content-Type":"application/json", body:JSON.stringify(o)})
 			.then(res => res.text())										// Get as text
 			.then(text =>{													// Process																	
 				this.changed=false;											// No unsaved changes now
+				this.titleChanged=false;									// No title change
+				this.curId=text-0;											// Set id
 				if (callback)	callback();									// Call cb, if spec'd
+				this.Draw();												// Redraw
 				PopUp("Project saved!");									// Saved!
-
 			})		
 		}
 
 		GetProjects(all) 												// GET SHOWS
 		{
 			let i,j;
-			let str="<option>Choose project to load</option>";				// Blank line
-			let days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];			// Days of the week
+			$("#pa-fileDir").remove();										// Remove old one
+			let str=`<div id="pa-fileDir" style="position:absolute;top:94px;right:168px;width:300px;height:100px;
+						padding:12px;background-color:#fff;border:1px solid #999;border-radius:8px">
+						<b>Choose project to load</b><ul id="fileCont" style="margin-left:-40px"></ul>`;
+				$("body").append(str.replace(/\t|\n|\r/g,""));												// Add it
+			
 			fetch(`//${window.location.host}:8081/?q=list&type=PAPRO&email=${myEmail}&password=${myPassword}`)
 					.then(res => res.json())								// Get as text
 					.then(data =>{											// Process																	
@@ -827,26 +841,31 @@ var x=$("#bodyDiv").offset().left+560;								// Left
 							let h=d.getHours();								// Get hours
 							if (h > 12)	h-=12;								// 24 -> 12
 							if (data[i].title)  							// A valid title
-								str+=`<option value=${data[i].id}>${days[d.getDay()]} ${(""+h).padStart(2,0)}:${(""+d.getMinutes()).padStart(2,0)} &nbsp; ${data[i].title} (${data[i].id})</option>`;
+							$("#fileCont").append(`<li class="pa-listItem" id="fileItem-${data[i].id}"> ${data[i].title}
+								<span style="float:right">#${data[i].id}</span></li>`);
 							}
-						$("#proOptions").empty()							// Remove options
-						$("#proOptions").append(str+"<option>Cancel</option>");	// Add options
-						$("#proOptions").show();							// Resize
+						$("[id^=fileItem-]").click( (e)=> {					// ON FILE CLICK
+							this.curId=e.currentTarget.id.substr(9)-0;		// Set id
+							this.Load(this.curId); 							// Load project
+							$("#pa-fileDir").remove();						// Remove list
+						});
 					});		
 			}
 
-	Load(id) 															// LOAD PROJECT
+	Load(id, callback) 															// LOAD PROJECT
 	{
 		this.changed=false;													// No unsaved changes
 		fetch(`//${window.location.host}:8081?q=load&type=PAPRO&id=${id}`)	// Load show
 			.then(res => res.json())										// Get as text
 			.then(data =>{													// Process
 				projects.title=data[0].title;								// Title
+				this.titleChanged=false;									// No title change
 				let o=JSON.parse(data[0].data);								// Point at parsed data
 				projects.script=o.script									// Script
 				projects.pics=o.binPics;									// Pics
 				projects.era=o.era;											// Era
 				this.Draw();												// Redraw
+				if (callback) callback();									// Reun callback if spec'd
 			})
 		}
 
