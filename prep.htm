@@ -405,7 +405,7 @@
 			$("#pa-fileDir").remove();										// Remove old one
 			let x=$("#proOptions").position().left+$("#proOptions").width()-278;	// Position
 			let str=`<div id="pa-fileDir" style="position:absolute;top:94px;left:${x}px;width:300px;height:100px;
-						padding:12px;background-color:#fff;border:1px solid #999;border-radius:8px">
+						padding:12px;background-color:#fff;border:1px solid #999;border-radius:8px;overflow-y:auto">
 						<b>Choose project to load</b><ul id="fileCont" style="margin-left:-40px"></ul>`;
 				$("body").append(str.replace(/\t|\n|\r/g,""));												// Add it
 			
@@ -423,13 +423,17 @@
 							let h=d.getHours();								// Get hours
 							if (h > 12)	h-=12;								// 24 -> 12
 							if (data[i].title)  							// A valid title
-							$("#fileCont").append(`<li class="pa-listItem" id="fileItem-${data[i].id}"> ${data[i].title}
+							$("#fileCont").append(`<li class="pa-listItem" id="fileItem-${data[i].id}">${data[i].title}
 								<span style="float:right">#${data[i].id}</span></li>`);
 							}
+						$("#fileCont").append(`<li class="pa-listItem" id="fileItem-0"><hr><b>Cancel</b></li>`);
+						
 						$("[id^=fileItem-]").click( (e)=> {					// ON FILE CLICK
-							this.curId=e.currentTarget.id.substr(9)-0;		// Set id
-							this.Load(this.curId); 							// Load project
+							let id=e.currentTarget.id.substr(9)-0;			// Get id
 							$("#pa-fileDir").remove();						// Remove list
+							if (!id) return;								// Cancel
+							this.curId=id;									// Set id
+							this.Load(id); 									// Load project
 						});
 					});		
 			}
@@ -649,7 +653,7 @@
 			$("body").append(str+"</div>");									// Add popup
 		var x=$("#binPic-"+num).offset().left-160+$("#binPic-"+num).width()/2;	// Center
 		var y=$("#binPic-"+num).offset().top-10;							// Top
-		y=y-$("#metaDiv").height()-32;										// Align by bottom
+		y=Math.max(8,y-$("#metaDiv").height()-32);							// Align by bottom and cap
 		var off=x;															// Save pos
 		x=Math.min(x,$(window).width()-360);								// Cap to window
 		off-=x;																// Offset from end
