@@ -14,43 +14,38 @@
 	<script src="player.js"></script>
 	<script src="script.js"></script>
 	<style type="text/css">
-		 body { 			font-family: Verdana,Geneva,sans-serif; font-size: 13px;  
-							padding: 0; margin:0px; 
+		 body { 			font-family:SegoeUI,Verdana,Geneva,sans-serif; font-size:13px; padding:0; margin:0;
+							background-color:#eee; 
 							}
-		.pa-main {		 	width: 100vw; min-width: 768px; overflow: auto;  background-color:#eee; opacity: 0; 
+		.pa-main {		 	width:100vw; min-width:768px; overflow:auto;  background-color:#eee; opacity:0; 
 							}
-
 		.pa-alert {			position:absolute; top:30px; left:0; width:176px; text-align:center; color:#27ae60; display:none;
 							}
 		
 		/* SCRIPT --------------------------------------------------------------------------------------------------*/
 
-		.pa-script {		position: absolute; left:0; top:0; height: calc(100% - 150px); 
-							background-color:#fff; overflow-y: scroll;
+		.pa-scriptBack {	position:absolute; overflow:scroll; background-color:#eee; 
 							}
-		.pa-titleEdit {		width: calc(100% - 206px); margin-left: 176px; margin-top: 20px; 
-		 					font-weight: bold; font-size: 30px;
+		.pa-titleEdit {		display:inline-block; width:calc(60% - 206px); margin:20px 0 0 176px; font-weight:bold; font-size:24px;
 							}
-		.pa-scriptPix {		display: inline-block; width: 126px; padding: 16px; height: 80%;
-							color: #999; text-align:center; cursor:url(img/moveud.cur),auto;
+		.pa-scriptPix {		display:inline-block; width:126px; padding:16px; height:80%;
+							color:#999; text-align:center; cursor:url(img/moveud.cur),auto;
 							}
-		.pa-scriptPic {		width: 124px; height: 83px; position: absolute; left: 16px; overflow: hidden;
-							border: 2px solid #999;
+		.pa-scriptPic {		width:124px; height:83px; overflow:hidden;	border:2px solid #999;
 							}
-		.pa-scriptText {	display: inline-block; width: calc(100% - 240px); vertical-align: top;
+		.pa-scriptText {	display:inline-block; width:calc(100% - 196px); vertical-align:top;
 							padding: 16px; font-size: 24px; line-height: 175%;
 							}
 		.pa-scriptText:focus{ outline:none;	
 							}
-		.pa-load {			border-radius:10px; width:1px; padding:0 8px; border: 1px solid #999; 
-							cursor:pointer;	float:right; margin:-28px 8px 0 0; font-size:14px;					
-							padding-left: 8px; padding-right: 8px; padding-top: 1px;
+		.pa-load {			display:inline-block; border-radius:10px; width:1px; vertical-align:6px;
+							border: 1px solid #999; cursor:pointer; font-size:14px; padding:0 9px 0 8px;
 							}
 
 		/* PLAYER --------------------------------------------------------------------------------------------------*/
 
-		.pa-player {		position: absolute; top: 0px; text-align: center; min-width: 380px;
-							background-color:#ddd;  height:calc(100% - 150px); float: top;
+		.pa-player {		position:absolute; top: 0px; text-align: center; min-width: 380px;
+							background-color:#ddd; height:calc(100% - 150px); float: top;
 							}
 		.pa-screen {		width:calc(100% - 32px); background-color: #666; border-radius: 8px; 
 							margin: 16px; margin-bottom: -4px; text-align:left; overflow: hidden;
@@ -89,7 +84,7 @@
 							}
 		.pa-binMenu {		display: inline-block; vertical-align: top; text-align:center; width: 134px; padding-left: 12px;
 							}							
-		.pa-pix {			display: inline-block; overflow-x: scroll;  white-space: nowrap; width: calc(100% - 160px); 
+		.pa-pix {			display:inline-block; overflow-x:scroll;  white-space: nowrap; width: calc(100% - 160px); 
 							}
 		.pa-pic {			padding: 8px; padding-right: 0; padding-bottom:4px; display: inline-block; cursor:url(img/movelr.cur),auto;
 							}
@@ -152,17 +147,23 @@
 		.pa-chatMsgT {		display: inline-block;border-radius: 6px; background-color: #ddd; color:#000;
 							padding: 6px 10px 6px 10px; margin-top: 4px; max-width:66%;
 							}
+							@font-face {  		font-family: SegoeUI; src: url(img/segoeui.ttf);   }
+
+		body ::-webkit-scrollbar { width:9px; height:8px } 
+		body ::-webkit-scrollbar-track { background: transparent }
+		body ::-webkit-scrollbar-thumb { border-radius:8px ;background:#a4baec }
+		body ::-webkit-scrollbar-thumb:hover { background: #a4baec }
 
 </style>
 
 </head>
 <body>
 	<div id="mainDiv" class="pa-main">
-		<div id="scriptDiv">
-			<div id="titleDiv" contenteditable="true" class="pa-titleEdit"></div>
-			<select id="loadBut" class="pa-load " title="Load project"><option value="">--------------------------------------------------------------------</option></select>
+		<div id="titleDiv" contenteditable="true" class="pa-titleEdit"></div>
+		<select id="loadBut" class="pa-load " title="Load project"><option value="">--------------------------------------------------------------------</option></select>
+		<div id="scriptBackDiv" class="pa-scriptBack">
 			<div id="scriptPixDiv" class="pa-scriptPix"></div>	
-			<div id="scriptDivider" style="position:absolute;background-color:#99cc99;;width:6px;top:20px;left:160px;border-radius:4px;"></div>	
+			<div id="scriptDivider" style="position:fixed;background-color:#99cc99;width:6px;top:50px;left:160px;border-radius:4px;height:calc(100% - 220px)"></div>	
 			<div id="scriptTextDiv" contenteditable="true" class="pa-scriptText"></div>		
 		</div>	
 		<div id="binDiv" class="pa-bin">
@@ -176,7 +177,6 @@
 				<img id="screenPic" src="" style="position:relative">
 				<div id="screenTitleDiv" class="pa-title"></div>
 				<img  src='img/helpicon.gif' style='position:absolute;top:calc(100% - 26px);right:0;width:16px;margin:6px;margin-bottom:12px;cursor:pointer' onclick='bin.ShowHelp()'>
-				
 			</div>
 			<div class="pa-time">
 				<span id="startTime" style="float:left;cursor:pointer"></span>
@@ -307,11 +307,10 @@
 		ResizePanes();														// Start up sizing
 		$("#splashDiv").delay(noSplash?1:1000).animate({ opacity:0},noSplash?1:500, // Hide logo
 				function() {	 											// When done
-					if (isFullScreen) 										// Full screen flag
-						player.SetFullScreen(2);							// Set it
+					if (isFullScreen) 	player.SetFullScreen(2);			// Full screen flag
 					LogIn((id, pw, rowId)=>{								// Log in
 						userId=id; password=pw;								// Set id and pw
-					doc.curScript=rowId;									// Set project id
+						doc.curScript=rowId;								// Set project id
 						$("#mainDiv").animate({ opacity:1},noSplash?500:2000, // Show interface
 							()=> {	$("#splashDiv").remove();	});			// Remove splash screen
 						})	
@@ -362,7 +361,8 @@
 
 	function LogIn(callback)											// LOG IN
 	{
-		if (window.location.search.substring(1)) {					 		// If id spec'd
+		let assigned=window.location.search.substring(1);					// Get id, if any
+		if (assigned && assigned.charAt(0) != "*") {					 	// If id spec'd and not assigned
 			callback("guest","",doc.curScript);								// Show screen						
 			return;
 			}
@@ -395,6 +395,11 @@
 				PopUp("Please type your password");							// Alert
 				return;														// Quit
 				}		
+			if (assigned) {													// If an assuigned project
+				if (callback)	callback(e,p,doc.curScript);				// If an ok callback spec'd, run it
+				$("#dialogDiv").remove();									// Kill dialog
+				return;														// Quit
+				}
 			fetch(`//${window.location.host}:8081?q=login&type=PA&role=&email=${e}&password=${p}`)
 				.then(res => res.text())									// Get as text
 				.then(text =>{												// Process																	
@@ -444,14 +449,13 @@
 		$("#screenDiv").width($("#playerDiv").width()-32);					// Screen width
 		$("#screenDiv").height($("#screenDiv").width()*playAspect);			// 16 x 9 screen		
 		$("#playerDiv").css("min-height",$("#screenDiv").height()+132+"px");// Minimum height to preserve work area
-		$("#scriptDiv").css({ width:sw+"px", height:$("#playerDiv").height()+"px" });	// Size script
+		$("#scriptBackDiv").css({ width:sw-12+"px", height:ph-40+"px" });	// Size script back
 		var oh=$("#screenDiv").height()+82;									// Options height
 		pw=$("#screenDiv").width()/2;										// Center of player
 		$("#picOptions").css({ left:(pw-160)+"px",top:oh+"px" });			// Set option					
 		$("#soundOptions").css({ left:(pw+60)+"px",top:oh+"px" });			// Set option					
 		var x=$("#sliderBarDiv").offset().left-8;							// Set left
 		var y=$("#sliderBarDiv").offset().top+10;							// Set top
-		$("#scriptDivider").css({ "margin-top": th, height: $("#scriptTextDiv").height()-16+"px" });
 		$("#sliderDiv").offset({ left:x,top:y });							// Set slider						
 		if ('ontouchstart' in document.documentElement) {					// Touch screens don't show scroll bars, so add a button
 			if (Math.abs($("#binPixDiv")[0].scrollWidth-$("#binPixDiv").outerWidth()) > 5) 	// If it can scroll

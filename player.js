@@ -186,7 +186,7 @@ class CPlayer {
 			}
 		else{																// If regular screen
 			$("#screenTitleDiv").text("");									// No title
-			$("body").css({ "background-color":"#fff", overflow:"auto" });	// White back, overflow
+			$("body").css({ "background-color":"#eee", overflow:"auto" });	// White back, overflow
 			$("#mainDiv").css({ "min-width":"768px" });						// Restore min-wid
 			$("#binDiv").fadeIn();											// Fade bin in
 			$("#scriptDiv").fadeIn();										// Script

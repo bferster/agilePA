@@ -9,7 +9,7 @@ class CScript {
 		this.pics=[];														// Alloc array									
 		this.charMap=[];													// Positions of periods in text
 
-		$("#scriptDiv").droppable({											// HANDLE DROPS TO BIN
+		$("#scriptBackDiv").droppable({											// HANDLE DROPS TO BIN
 			accept: ".pa-pic", 												// Accept only pics from bin	  
 			drop: (event,ui)=> {											// On drop
 				doc.Do();													// Save a do
@@ -18,7 +18,7 @@ class CScript {
 				if (!player.inMove)											// If not in motion editor
 					player.curPic=this.pics.length;							// This is current pic
 				var pos=$("#"+ui.draggable[0].id).offset().top;				// Get y pos of image
-				var pos=ui.offset.top+$("#scriptDiv").scrollTop();			// Get unscrolled pos
+				var pos=ui.offset.top+$("#scriptBackDiv").scrollTop();		// Get unscrolled pos
 				pos=this.GetPosFromPic(pos);								// Get char pos
 				this.AddPic(id,pos);										// Add to script
 				Sound("ding");												// Ding
@@ -34,7 +34,6 @@ class CScript {
 
 		$("#scriptTextDiv").on("change keyup paste", ()=> {					// ON SCRIPT CHANGE
 			doc.changed=true;												// Set changed flag
-			this.ResizeImageArea();											// Equilibrate fields
 			player.maxTime=$("#scriptTextDiv").text().length*player.speechRate; // Set max time
 			$("#endTime").text(SecondsToTimecode(Math.round(player.maxTime)));// End display
 			});
@@ -54,18 +53,11 @@ class CScript {
 			});	
 		}
 
-	ResizeImageArea() 													//	MATCH IMAGE AREA TO TEXT AREA
-	{
-		$("#scriptPixDiv").height($("#scriptTextDiv").height())				// Make the same
-		$("#scriptDivider").height($("#scriptTextDiv")[0].scrollHeight-24);	// Set divider
-	}
-
 	Draw() 																//	DRAW SCRIPT
 	{
 		var i,y,str="<br>Drag<br>pictures<br>here"
 		var cpl=$("#scriptTextDiv").width()/15;								// Characters/line
 		var offy=$("#scriptTextDiv").offset().top+24;						// Offset of title
-		offy+=$("#scriptDiv").scrollTop();									// Account for scroll
 		for (i=0;i<this.pics.length;++i) {									// For each pic
 			y=(this.pics[i].start/cpl*40)+offy;								// Calc y pos			
 			str+="<div id='scriptPic-"+i+"' class='pa-scriptPic' ";			// Container div 
@@ -75,8 +67,7 @@ class CScript {
 			str+="></div>"													// End div
 			}
 		$("#scriptPixDiv").html(str);										// Show pix
-		this.ResizeImageArea();												// Equilibrate fields
-		this.ResolvePicTimes();												// Make times a solid stream
+			this.ResolvePicTimes();												// Make times a solid stream
 		
 		for (i=0;i<this.pics.length;++i) {									// For each pic
 			player.ScalePic(128,85,"#scriptImg-"+i,script.pics[i].pos[0]); 	// Scale to start pos
@@ -147,7 +138,7 @@ class CScript {
 	{
 		var cpl=$("#scriptTextDiv").width()/15;								// Characters/line
 		var offy=$("#scriptTextDiv").offset().top+24;						// Offset of title
-		offy+=$("#scriptDiv").scrollTop();									// Account for scroll
+		offy+=$("#scriptBackDiv").scrollTop();								// Account for scroll
 		return (pos-offy)/40*cpl;											// Return char pos
 	}
 
@@ -228,7 +219,7 @@ class CScript {
 		if (noScroll)														// If dragging pic
 			return;															// Don't scroll
 		var y=pos/cpl*40;													// Scroll point
-		$("#scriptDiv").scrollTop(y-$("#scriptDiv").height()/2);			// Scroll text
+		$("#scriptBackDiv").scrollTop(y-$("#scriptBackDiv").height()/2);		// Scroll text
 	}
 
 } // CLASS CLOSURE
@@ -291,7 +282,7 @@ class CScript {
 						this.Draw();                                          	// Redraw
 						}
 					else if (ui.offset.left < 120) {							// In script pic area
-						var pos=ui.offset.top+$("#scriptDiv").scrollTop();		// Get unscrolled pos
+						var pos=ui.offset.top+$("#scriptBackDiv").scrollTop();		// Get unscrolled pos
 						pos=script.GetPosFromPic(pos);							// Calc char pos
 						script.Highlight("#0000ff",pos,-1,true);				// Highlight position in text & inhibit scrolling						
 						}
@@ -335,8 +326,8 @@ class CScript {
 			$("#metaDiv").offset({left:x,top:y});								// Position popup
 
 			$("#playerDiv").on("mouseenter", ()=> {	$("#metaDiv").remove(); });	// Kill metadata
-			$("#scriptDiv").on("mouseenter", ()=> {	$("#metaDiv").remove(); });	// Kill metadata	
-			$("#scriptDiv").on("click", ()=> { $("#pa-webpage").remove(); });	// Kill webpage						
+			$("#scriptBackDiv").on("mouseenter", ()=> {	$("#metaDiv").remove(); });	// Kill metadata	
+			$("#scriptBackDiv").on("click", ()=> { $("#pa-webpage").remove(); });	// Kill webpage						
 			$("#playerDiv").on("click", ()=> { $("#pa-webpage").remove(); });	// Kill webpage					
 			$("#zoomBut").on("click", ()=> { this.ShowPic(num);	});				// Show image popup
 		}
@@ -344,7 +335,7 @@ class CScript {
 		AddPic()															// ADD NEW PICTURE DIALOG
 		{
 			var x=$("#mainDiv").width()/2-266;									// Center in main screen
-			var y=$("#scriptDiv").height()/2-100;								// Center
+			var y=$("#scriptBackDiv").height()/2-100;							// Center
 			var str="<div style='display:inline-block'><table style='width:300px'>";	// Info div/table
 			str+="<tr><td>Title</td><td><input id='addTitle' type='text' class='pa-is' style='width:100%'</td></tr>";
 			str+="<tr><td>URL</td><td><input id='addUrl' type='text' class='pa-is' style='width:100%'></td></tr>";
@@ -385,8 +376,8 @@ class CScript {
 			$("#metaDiv").remove();												// Kill metadata
 			var o=this.pics[num];												// Point at pic
 			var str="<div id='pa-webpage' class='pa-webpage' style='";			// Add div
-			str+="width:"+($("#scriptDiv").width()-24);							// Width
-			str+="px;height:"+($("#scriptDiv").height()-44);					// Height
+			str+="width:"+($("#scriptBackDiv").width()-24);							// Width
+			str+="px;height:"+($("#scriptBackDiv").height()-44);					// Height
 			str+="px;top:8px;left:8px'>";										// Finish div
 			str+="<b>"+o.title+"</b><img id='pa-close' src='img/closedot.gif' style='float:right;cursor:pointer'><br><br>"	// Add close button
 			str+="<div style='overflow-y:auto;height:calc(100% - 30px)'><img src='"+o.src+"' width='100%'>";	
@@ -405,7 +396,7 @@ class CScript {
 			var div="#mainDiv";													// Enclosing div	
 			$("#pa-webpage").remove();											// Remove old image, if any
 			$("#metaDiv").remove();												// Kill metadata
-			var h=$("#scriptDiv").height()-44;									// Height
+			var h=$("#scriptBackDiv").height()-44;									// Height
 			var str="<div id='pa-webpage' class='pa-webpage' style='";			// Add div
 			str+="font-size:13px;width:"+(h*.77);								// Width proportion to 8.x x 11 page
 			str+="px;height:"+h+"px;top:8px;left:8px'>";						// Finish div
