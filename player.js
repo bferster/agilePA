@@ -192,12 +192,9 @@ class CPlayer {
 			$("#picOptions").fadeIn(0);	$("#soundOptions").fadeIn(0);		// Show options
 			this.inPlay=false;												// Force stop playing
 			this.Play(0,0);													// Stop
-			$("#screenDiv").width(ww*.4-32);                                // Width    
-			$("#screenDiv").height((ww*.4-32)*.5625);                       // Restore screen height
-			$("#playerDiv").width(ww*.4);                                   // Player width
-			$("#playerDiv").offset({ left:ww*.6, top:0 });					// Player position
-			$("#playerDiv").height(wh-150);                                 // Player height
-		}
+			$("#screenDiv").css({ width:"calc(40vw - 32px)", height:"calc((40vw - 32px)*.5625)" });
+			$("#playerDiv").css({ left:"60%", height:"calc(100vh - 150px)", width:"40%" }); 		
+			}
 	}
 
 	InitMotionEditor(mode)												// INIT MOTION EDITOR
