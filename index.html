@@ -15,16 +15,16 @@
 	<script src="script.js"></script>
 	<style type="text/css">
 		 body { 			font-family:SegoeUI,Verdana,Geneva,sans-serif; font-size:13px; padding:0; margin:0;
-							background-color:#eee; 
+							background-color:#eee; overflow:hidden;
 							}
-		.pa-main {		 	width:100vw; min-width:768px; overflow:auto;  background-color:#eee; opacity:0; 
+		.pa-main {		 	width:100vw; height:100vh; background-color:#eee; opacity:0; 
 							}
 		.pa-alert {			position:absolute; top:30px; left:0; width:176px; text-align:center; color:#27ae60; display:none;
 							}
 		
 		/* SCRIPT --------------------------------------------------------------------------------------------------*/
 
-		.pa-scriptBack {	position:absolute; overflow:scroll; background-color:#eee; 
+		.pa-scriptBack {	position:absolute; overflow:scroll; background-color:#eee; width:60%; height:calc(100vh - 190px);
 							}
 		.pa-titleEdit {		display:inline-block; width:calc(60% - 206px); margin:20px 0 0 176px; font-weight:bold; font-size:24px;
 							}
@@ -44,43 +44,44 @@
 
 		/* PLAYER --------------------------------------------------------------------------------------------------*/
 
-		.pa-player {		position:absolute; top: 0px; text-align: center; min-width: 380px;
-							background-color:#ddd; height:calc(100% - 150px); float: top;
+		.pa-player {		position:absolute;  text-align:center; background-color:#ddd; 
+							top:0; left:60%; height:calc(100vh - 150px); width:40%; 
 							}
-		.pa-screen {		width:calc(100% - 32px); background-color: #666; border-radius: 8px; 
-							margin: 16px; margin-bottom: -4px; text-align:left; overflow: hidden;
+		.pa-screen {		width:calc(40vw - 32px); height:calc((40vw - 32px)*.5625); background-color:#666; border-radius:8px; 
+							margin:16px; margin-bottom:-4px; text-align:left; overflow:hidden;
 							}
 		.pa-title {			position: absolute; top: 0; left:0;  width: 100%; text-align: center;
 							color:#fff; font-weight:bold; text-shadow: 2px 2px 8px #000;
 							}
 		.pa-time {			color: #666; padding: 12px 16px; font-size: 11px;
 							}
-		.pa-sliderBar {		width:calc(100% - 32px); background-color: #aaa; height: 8px; 
-							border-radius: 8px; margin-left: 16px; margin-top: 4px;
+		.pa-sliderBar {		width:calc(100% - 32px); background-color:#aaa; height:8px; 
+							border-radius:8px; margin-left:16px; margin-top:4px;
 							}
-		.pa-slider {  		width: 0; height: 0; border-bottom: 10px solid #009900; margin: 0 8px;
-							border-left: 10px solid transparent; border-right: 10px solid transparent; cursor: pointer;
+		.pa-slider {  		width:0; height:0; border-bottom:10px solid #009900; margin:0 8px;
+							border-left:10px solid transparent; border-right:10px solid transparent; cursor:pointer;
 							}
 		.pa-playbut {		cursor: pointer; margin: 16px 0px 0px 0px; width: 50px;
 							}
-		.pa-options {		position: absolute; border-radius: 10px; width: 130px; height: 20px; padding: 0 8px;
-							border: 1px solid #999;  color:#666; cursor:pointer; background-color: #ccc;
+		.pa-options {		position:absolute; border-radius:10px; width:130px; height:20px; padding:0 8px;
+							border:1px solid #999; color:#666; cursor:pointer; background-color:#ccc;
+							left:calc(50% - 185px); top:calc((40vw - 32px)*.5625 + 80px);
 							}
 		.pa-options:focus{ outline:none;
 							}
 		.pa-move {			display: inline-block; color:#666; background-color: #eee; box-shadow: 4px 4px 12px 2px #aaa;
-							border: 1px solid #666; padding: 8px 0px 8px 8px;; border-radius: 8px; white-space: nowrap; 
+							border: 1px solid #666; padding:8px 0px 8px 8px;; border-radius: 8px; white-space: nowrap; 
 							}
-		.pa-movePic {		display: inline-block; cursor: pointer; width: 100px; height: 66px; margin: 2px; margin-bottom: -2px;
-							background-color: #666; border: 3px solid #666; overflow: hidden; text-align: left; 
+		.pa-movePic {		display: inline-block; cursor: pointer; width: 100px; height: 66px; margin:2px; margin-bottom:-2px;
+							background-color:#666; border:3px solid #666; overflow:hidden; text-align:left; 
 							}
 		.pa-voice {			font-size: 10px; color: #999; 
 							}
 
 		/* BIN --------------------------------------------------------------------------------------------------*/
 
-		.pa-bin {			position: absolute; width: 100%; left:0; top: calc(100% - 150px); height:149px;
-							background-color:#eee; 	border-top: 1px solid #ccc;
+		.pa-bin {			position:absolute; width:100%; left:0; top:calc(100% - 150px); height:149px;
+							background-color:#eee; border-top:1px solid #ccc;
 							}
 		.pa-binMenu {		display: inline-block; vertical-align: top; text-align:center; width: 134px; padding-left: 12px;
 							}							
@@ -195,7 +196,7 @@
 				</select>
 			<img id="playBut" class="pa-playbut" src="img/playbut.gif"><br>
 			<span id="activeVoice" class="pa-voice" ></span><br>
-			<div id="soundOptions" class="pa-options" style="height:17px;padding:0" onclick="player.SoundSettings()">Sound options</div>
+			<div id="soundOptions" class="pa-options" style="left:calc(50% + 60px)" onclick="player.SoundSettings()">Sound options</div>
 			<div id="moveDiv" class="pa-move">
 				<div id="startDiv" style="display:inline-block">
 					<b>Start</b><br><div id="startPic" class="pa-movePic"></div>
@@ -278,8 +279,6 @@
 		if (!isMobile)														// Check for Android
 			isMobile=navigator.userAgent.match(/android/i) ? true : false; 	// Set mobile flag
 
-		$(window).resize(ResizePanes);                                     	// On window resizing
-		ResizePanes();														// Start up sizing
 		doc=new CDoc();														// Alloc CDoc module
 		bin=new CBin();														// Alloc CBin module
 		chat=new CChat();													// Alloc CChatmodule
@@ -304,7 +303,7 @@
 			}	
 		else																// No doc													
 			doc.LoadJSON("civil");											// Load demo
-		ResizePanes();														// Start up sizing
+		Draw();																// Draw
 		$("#splashDiv").delay(noSplash?1:1000).animate({ opacity:0},noSplash?1:500, // Hide logo
 				function() {	 											// When done
 					if (isFullScreen) 	player.SetFullScreen(2);			// Full screen flag
@@ -439,24 +438,8 @@
 			}
 	}
 
-	function ResizePanes()												//  REACT TO SCREEN SIZE
+	function ResizePanes()												//  REACT TO SCREEN SIZE (NOT CALLED ANYMORE)
 	{
-		var pw=Math.max(380,$("#mainDiv").width()*.4);						// Player width, capped
-		var sw=$("#mainDiv").width()-pw;									// Script width
-		var th=$("#titleDiv").height()+10;									// Get height of title bar
-		var ph=$(window).outerHeight()-150;									// Player/script height			
-		$("#playerDiv").css({ width:pw+"px", left: sw+"px", top: 0, height:ph+"px" });	// Position player
-		$("#screenDiv").width($("#playerDiv").width()-32);					// Screen width
-		$("#screenDiv").height($("#screenDiv").width()*playAspect);			// 16 x 9 screen		
-		$("#playerDiv").css("min-height",$("#screenDiv").height()+132+"px");// Minimum height to preserve work area
-		$("#scriptBackDiv").css({ width:sw-12+"px", height:ph-40+"px" });	// Size script back
-		var oh=$("#screenDiv").height()+82;									// Options height
-		pw=$("#screenDiv").width()/2;										// Center of player
-		$("#picOptions").css({ left:(pw-160)+"px",top:oh+"px" });			// Set option					
-		$("#soundOptions").css({ left:(pw+60)+"px",top:oh+"px" });			// Set option					
-		var x=$("#sliderBarDiv").offset().left-8;							// Set left
-		var y=$("#sliderBarDiv").offset().top+10;							// Set top
-		$("#sliderDiv").offset({ left:x,top:y });							// Set slider						
 		if ('ontouchstart' in document.documentElement) {					// Touch screens don't show scroll bars, so add a button
 			if (Math.abs($("#binPixDiv")[0].scrollWidth-$("#binPixDiv").outerWidth()) > 5) 	// If it can scroll
 				$("#binRightBut").show();									// Show right
@@ -465,11 +448,7 @@
 				$("#binPixDiv").css("width","calc(100% - 200px)");			// Shorten container div
 				}
 			}		
-		$("#binDiv").css({ top:$("#playerDiv").height()+"px",width:$("#mainDiv").width()+"px" });	// Position bin below player
-		Draw();																// Redraw screen
-		if (isFullScreen) 													// If full screen
-			player.SetFullScreen(isFullScreen);								// Exit mode
-	}
+		}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // DOC
@@ -556,7 +535,6 @@
 			if (o.allowNewPics != undefined) this.allowNewPics=o.allowNewPics;	// Reset if spec'd
 			if (o.scriptPics)													// If defined
 				script.pics=$.parseJSON(JSON.stringify(o.scriptPics));			// Clone script pics
-			ResizePanes();														// Redraw
 		}
 		
 		GetLink() 															// GET LINK TO SHOW

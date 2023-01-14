@@ -128,7 +128,8 @@ class CPlayer {
 		var y=Math.round($("#sliderBarDiv").offset().top+10);				// Set top
 		if (this.maxTime) 													// If some time in script
 			x+=Math.min(this.curTime/this.maxTime,1)*($("#sliderBarDiv").width()-20);	// Move slider into position
-		$("#sliderDiv").offset({ left:x, top:y });							// Set slider						
+		trace(x,y)
+			$("#sliderDiv").offset({ left:x, top:y });							// Set slider						
 		var num=script.GetPicFromTime(this.curTime);						// Get current pic
 		if (num != -1) {													// If on a picture
 			$("#screenPic").show(0);										// Show pic
@@ -159,16 +160,15 @@ class CPlayer {
 	SetFullScreen(mode)													// FULL SCREEN
 	{
 		isFullScreen=mode;													// Set flag
-		if (mode) {															// If full screen
-			$("body").css({ "background-color":"#ddd", overflow:"hidden" });// Grey background, hide overflow
-			$("#mainDiv").css({ "min-width":"0px" });						// Remove min-wid 
+		let ww=$(window).width();                                      		// Get window width
+		let wh=$(window).innerHeight();                                     // Get window height
+			if (mode) {														// If full screen
+			$("body").css({ "background-color":"#ddd" });					// Grey background,
 			$("#picOptions").fadeOut(0);	$("#soundOptions").fadeOut(0);	// Hide options
 			$("#scriptDiv").fadeOut();										// Fade out script
 			$("#binDiv").fadeOut();											// Bin
-			var ww=$(window).width();                                       // Get window width
-			var wh=$(window).height();                                      // Get window height
-			var h=wh-130;                                                   // Use screen height as dominant
-			var w=h/playAspect;                                             // Screen width to aspect
+			let h=wh-130;                                                   // Use screen height as dominant
+			let w=h/playAspect;                                             // Screen width to aspect
 			if (w > ww-32) {                                               	// Too narrow
 				w=ww-32;                                                    // Size by width
 				h=w*playAspect;                                             // Height follows width
@@ -186,15 +186,18 @@ class CPlayer {
 			}
 		else{																// If regular screen
 			$("#screenTitleDiv").text("");									// No title
-			$("body").css({ "background-color":"#eee", overflow:"auto" });	// White back, overflow
-			$("#mainDiv").css({ "min-width":"768px" });						// Restore min-wid
+			$("body").css({ "background-color":"#eee" });					// White back, overflow
 			$("#binDiv").fadeIn();											// Fade bin in
 			$("#scriptDiv").fadeIn();										// Script
 			$("#picOptions").fadeIn(0);	$("#soundOptions").fadeIn(0);		// Show options
 			this.inPlay=false;												// Force stop playing
 			this.Play(0,0);													// Stop
-			ResizePanes();
-			}
+			$("#screenDiv").width(ww*.4-32);                                // Width    
+			$("#screenDiv").height((ww*.4-32)*.5625);                       // Restore screen height
+			$("#playerDiv").width(ww*.4);                                   // Player width
+			$("#playerDiv").offset({ left:ww*.6, top:0 });					// Player position
+			$("#playerDiv").height(wh-150);                                 // Player height
+		}
 	}
 
 	InitMotionEditor(mode)												// INIT MOTION EDITOR
