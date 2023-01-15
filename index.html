@@ -24,14 +24,13 @@
 		
 		/* SCRIPT --------------------------------------------------------------------------------------------------*/
 
-		.pa-scriptBack {	position:absolute; overflow:scroll; background-color:#eee; width:60%; height:calc(100vh - 190px);
+		.pa-scriptBack {	position:absolute; overflow:scroll; background-color:#eee; width:calc(60% - 10px); height:calc(100vh - 190px);
 							}
 		.pa-titleEdit {		display:inline-block; width:calc(60% - 206px); margin:20px 0 0 176px; font-weight:bold; font-size:24px;
 							}
-		.pa-scriptPix {		display:inline-block; width:126px; padding:16px; height:80%;
-							color:#999; text-align:center; cursor:url(img/moveud.cur),auto;
+		.pa-scriptPix {		display:inline-block; width:126px; padding:16px; color:#999; text-align:center; 
 							}
-		.pa-scriptPic {		width:124px; height:83px; overflow:hidden;	border:2px solid #999;
+		.pa-scriptPic {		position:absolute; width:124px; height:83px; overflow:hidden;	border:2px solid #999; cursor:url(img/moveud.cur),auto;
 							}
 		.pa-scriptText {	display:inline-block; width:calc(100% - 196px); vertical-align:top;
 							padding: 16px; font-size: 24px; line-height: 175%;
@@ -217,13 +216,11 @@
 	  
 	function PlayTTS()
 	{
-
-		function PlayTTS()
-	{
-		var audio=new SpeechSynthesisUtterance();					
-		audio.text="Hello from the iPad";						
-		speechSynthesis.speak(audio);							
-	}
+		function PlayTTS() {
+			var audio=new SpeechSynthesisUtterance();					
+			audio.text="Hello from the iPad";						
+			speechSynthesis.speak(audio);							
+		}
 
 		player.inPlay=!player.inPlay;										// Toggle state
 		if (player.inMove) {												// In motion editor
@@ -303,7 +300,9 @@
 			}	
 		else																// No doc													
 			doc.LoadJSON("civil");											// Load demo
-		Draw();																// Draw
+
+		window.addEventListener("resize", ()=>{ Draw(); } );				// Redraw on window resize
+
 		$("#splashDiv").delay(noSplash?1:1000).animate({ opacity:0},noSplash?1:500, // Hide logo
 				function() {	 											// When done
 					if (isFullScreen) 	player.SetFullScreen(2);			// Full screen flag
@@ -425,9 +424,7 @@
 	function Draw()														//  RE DRAW SCREEN
 	{
 		if (script) script.Draw();											// Redraw script
-		if (bin) {
-			bin.Draw();														// Redraw bin
-			}
+		if (bin) 	bin.Draw();												// Redraw bin
 		if (player)	{														// If player ready
 			if (doc.allowNewPics == 0)										// If adding new pix is inhibited		
 				$("#picOptions option[value='addNewPic']").hide();			// Remove option from menu
@@ -436,7 +433,7 @@
 			player.InitAudio();												// Init audio
 			player.Draw();													// Redraw player
 			}
-	}
+		}
 
 	function ResizePanes()												//  REACT TO SCREEN SIZE (NOT CALLED ANYMORE)
 	{
@@ -535,6 +532,7 @@
 			if (o.allowNewPics != undefined) this.allowNewPics=o.allowNewPics;	// Reset if spec'd
 			if (o.scriptPics)													// If defined
 				script.pics=$.parseJSON(JSON.stringify(o.scriptPics));			// Clone script pics
+			Draw();																// Draw 	
 		}
 		
 		GetLink() 															// GET LINK TO SHOW

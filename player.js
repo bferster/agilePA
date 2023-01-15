@@ -128,9 +128,9 @@ class CPlayer {
 		var y=Math.round($("#sliderBarDiv").offset().top+10);				// Set top
 		if (this.maxTime) 													// If some time in script
 			x+=Math.min(this.curTime/this.maxTime,1)*($("#sliderBarDiv").width()-20);	// Move slider into position
-		trace(x,y)
-			$("#sliderDiv").offset({ left:x, top:y });							// Set slider						
+		$("#sliderDiv").offset({ left:x, top:y });							// Set slider						
 		var num=script.GetPicFromTime(this.curTime);						// Get current pic
+	
 		if (num != -1) {													// If on a picture
 			$("#screenPic").show(0);										// Show pic
 			this.curPic=num;												// Set current pic
@@ -162,7 +162,7 @@ class CPlayer {
 		isFullScreen=mode;													// Set flag
 		let ww=$(window).width();                                      		// Get window width
 		let wh=$(window).innerHeight();                                     // Get window height
-			if (mode) {														// If full screen
+		if (mode) {														// If full screen
 			$("body").css({ "background-color":"#ddd" });					// Grey background,
 			$("#picOptions").fadeOut(0);	$("#soundOptions").fadeOut(0);	// Hide options
 			$("#scriptDiv").fadeOut();										// Fade out script
@@ -182,7 +182,6 @@ class CPlayer {
 			$("#screenTitleDiv").text($("#titleDiv").text());				// Set title
 			$("#screenTitleDiv").css({ "font-size":h/10+"px",padding:(w/8)+"px","padding-top":(h/2.5)+"px", width:(w-w/4+32)+"px" });			
 			$("#screenTitleDiv").fadeOut(0).fadeIn(0);						// Fade title in
-			this.Draw();													// Redraw
 			}
 		else{																// If regular screen
 			$("#screenTitleDiv").text("");									// No title
@@ -195,6 +194,7 @@ class CPlayer {
 			$("#screenDiv").css({ width:"calc(40vw - 32px)", height:"calc((40vw - 32px)*.5625)" });
 			$("#playerDiv").css({ left:"60%", height:"calc(100vh - 150px)", width:"40%" }); 		
 			}
+		this.Draw();														// Redraw
 	}
 
 	InitMotionEditor(mode)												// INIT MOTION EDITOR
@@ -360,10 +360,10 @@ class CPlayer {
 
 	SoundSettings()														// SOUND SETTINGS DIALOG
 	{
-		var _this=this;														// Save context
-		var x=$("#playerDiv").position().left+$("#playerDiv").width()/2-166;// Center in screen
-		var y=$("#screenDiv").height()-220;									// Bottom of screen
-		var str="Audio rate<div id='rateSlider' style='float:right;width:150px'></div><br>";
+		let i,_this=this;													// Save context
+		let x=$("#playerDiv").position().left+$("#playerDiv").width()/2-166;// Center in screen
+		let y=$("#screenDiv").height()-220;									// Bottom of screen
+		let str="Audio rate<div id='rateSlider' style='float:right;width:150px'></div><br>";
 		str+="<div style='float:right;width:75px;border-left:1px solid #66cc66;margin-top:-1px;'>&nbsp;</div><br>";
 		str+="Audio pitch<div id='pitchSlider'style='float:right;width:150px'></div><br><br>";
 		str+="Voice<select id='voiceSel' class='pa-is' style='float:right'width:150px'><option>None</option><option>Use MP3 file</option><option>Default computer voice</option></select><br><br>";

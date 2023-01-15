@@ -9,17 +9,17 @@ class CScript {
 		this.pics=[];														// Alloc array									
 		this.charMap=[];													// Positions of periods in text
 
-		$("#scriptBackDiv").droppable({											// HANDLE DROPS TO BIN
+		$("#scriptBackDiv").droppable({										// HANDLE DROPS TO BIN
 			accept: ".pa-pic", 												// Accept only pics from bin	  
 			drop: (event,ui)=> {											// On drop
 				doc.Do();													// Save a do
 				$("#metaDiv").remove();										// Kill popup
-				var id=ui.draggable[0].id.substr(7);						// Get id
+				let id=ui.draggable[0].id.substr(7);						// Get id
 				if (!player.inMove)											// If not in motion editor
 					player.curPic=this.pics.length;							// This is current pic
-				var pos=$("#"+ui.draggable[0].id).offset().top;				// Get y pos of image
-				var pos=ui.offset.top+$("#scriptBackDiv").scrollTop();		// Get unscrolled pos
+				let pos=$("#"+ui.draggable[0].id).offset().top;				// Get y pos of image
 				pos=this.GetPosFromPic(pos);								// Get char pos
+				pos+=$("#scriptBackDiv").scrollTop();						// Offset for scroll
 				this.AddPic(id,pos);										// Add to script
 				Sound("ding");												// Ding
 				this.Draw();												// Show script
@@ -28,7 +28,7 @@ class CScript {
 			});
 		
 		$("#scriptTextDiv").on("focus",()=> {								// ON SCRIPT FOCUS
-			var txt=$("#scriptTextDiv").html();								// Get script html
+			let txt=$("#scriptTextDiv").html();								// Get script html
 			$("#scriptTextDiv").html(txt.replace(/<span.+">|<\/span>/g,""));// Remove spans
 			});
 
@@ -55,19 +55,19 @@ class CScript {
 
 	Draw() 																//	DRAW SCRIPT
 	{
-		var i,y,str="<br>Drag<br>pictures<br>here"
-		var cpl=$("#scriptTextDiv").width()/15;								// Characters/line
-		var offy=$("#scriptTextDiv").offset().top+24;						// Offset of title
+	
+		let i,y,str="<br>Drag<br>pictures<br>here"
+		let cpl=$("#scriptTextDiv").width()/15;								// Characters/line
 		for (i=0;i<this.pics.length;++i) {									// For each pic
-			y=(this.pics[i].start/cpl*40)+offy;								// Calc y pos			
+			y=(this.pics[i].start/cpl*40);									// Calc y pos			
 			str+="<div id='scriptPic-"+i+"' class='pa-scriptPic' ";			// Container div 
 			str+="style='top:"+y+"px'>";									// Pos
-			str+="<img id='scriptImg-"+i+"' style='position:relative' ";	// Img
+			str+="<img id='scriptImg-"+i+"' style='position:absolute' ";	// Img
 			str+="src='"+bin.pics[this.pics[i].num].src+"' ";				// Get source from bin
 			str+="></div>"													// End div
 			}
 		$("#scriptPixDiv").html(str);										// Show pix
-			this.ResolvePicTimes();												// Make times a solid stream
+			this.ResolvePicTimes();											// Make times a solid stream
 		
 		for (i=0;i<this.pics.length;++i) {									// For each pic
 			player.ScalePic(128,85,"#scriptImg-"+i,script.pics[i].pos[0]); 	// Scale to start pos
@@ -105,8 +105,8 @@ class CScript {
 							player.curPic=-1;								// No current pic
 						}
 					else{													// Normal move
-						var id=ui.helper[0].id.substr(10);					// Get id
-						var pos=this.GetPosFromPic(ui.position.top);		// Calc char pos
+						let id=ui.helper[0].id.substr(10);					// Get id
+						let pos=this.GetPosFromPic(ui.position.top);		// Calc char pos
 						if (pos > 0)										// In range										
 							this.SetPicStartTime(id,pos);					// Set pic start time
 						this.Draw;											// Redraw
@@ -137,9 +137,7 @@ class CScript {
 	GetPosFromPic(pos) 													// GET CHAR POS FROM PIC HEIGHT
 	{
 		var cpl=$("#scriptTextDiv").width()/15;								// Characters/line
-		var offy=$("#scriptTextDiv").offset().top+24;						// Offset of title
-		offy+=$("#scriptBackDiv").scrollTop();								// Account for scroll
-		return (pos-offy)/40*cpl;											// Return char pos
+		return (pos)/40*cpl;												// Return char pos
 	}
 
 	AddPic(picNum, when) 												//	ADD PIC TO SCRIPT
@@ -219,7 +217,7 @@ class CScript {
 		if (noScroll)														// If dragging pic
 			return;															// Don't scroll
 		var y=pos/cpl*40;													// Scroll point
-		$("#scriptBackDiv").scrollTop(y-$("#scriptBackDiv").height()/2);		// Scroll text
+		$("#scriptBackDiv").scrollTop(y-$("#scriptBackDiv").height()/2);	// Scroll text
 	}
 
 } // CLASS CLOSURE
