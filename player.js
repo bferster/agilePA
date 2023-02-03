@@ -162,10 +162,10 @@ class CPlayer {
 		isFullScreen=mode;													// Set flag
 		let ww=$(window).width();                                      		// Get window width
 		let wh=$(window).innerHeight();                                     // Get window height
-		if (mode) {														// If full screen
-			$("body").css({ "background-color":"#ddd" });					// Grey background,
+		if (mode) {															// If full screen
 			$("#picOptions").fadeOut(0);	$("#soundOptions").fadeOut(0);	// Hide options
-			$("#scriptDiv").fadeOut();										// Fade out script
+			$("#titleDiv").fadeOut();										// Fade out script title
+			$("#scriptBackDiv").fadeOut();									// Fade out script
 			$("#binDiv").fadeOut();											// Bin
 			let h=wh-130;                                                   // Use screen height as dominant
 			let w=h/playAspect;                                             // Screen width to aspect
@@ -185,9 +185,9 @@ class CPlayer {
 			}
 		else{																// If regular screen
 			$("#screenTitleDiv").text("");									// No title
-			$("body").css({ "background-color":"#eee" });					// White back, overflow
 			$("#binDiv").fadeIn();											// Fade bin in
-			$("#scriptDiv").fadeIn();										// Script
+			$("#titleDiv").fadeIn();										// Title
+			$("#scriptBackDiv").fadeIn();									// Script
 			$("#picOptions").fadeIn(0);	$("#soundOptions").fadeIn(0);		// Show options
 			this.inPlay=false;												// Force stop playing
 			this.Play(0,0);													// Stop
